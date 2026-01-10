@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BadgeCheck, Heart } from "lucide-react";
 import { cn, getImageUrl } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useViewedModels } from "@/hooks/use-viewed-models";
 
 interface ModelCardProps {
   name: string;
@@ -26,7 +27,9 @@ interface ModelCardProps {
 
 export function ModelCard({ name, image, tags, slug, priority, isOnline, is_verified, is_new, buttons }: ModelCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isViewed, markAsViewed } = useViewedModels();
   const favorite = isFavorite(slug);
+  const viewed = isViewed(slug);
   
   // Use centralized helper for consistent URL handling
   const imageUrl = getImageUrl(image);
@@ -37,8 +40,13 @@ export function ModelCard({ name, image, tags, slug, priority, isOnline, is_veri
     toggleFavorite(slug);
   };
 
+  // Mark as viewed when card is clicked (profile visit)
+  const handleCardClick = () => {
+    markAsViewed(slug);
+  };
+
   return (
-    <Link href={`/model/${slug}`} className="block group">
+    <Link href={`/model/${slug}`} className="block group" onClick={handleCardClick}>
       <Card className={cn(
         "relative overflow-hidden p-0 cursor-pointer",
         "transition-all duration-300 ease-out",
@@ -48,20 +56,20 @@ export function ModelCard({ name, image, tags, slug, priority, isOnline, is_veri
         "group-hover:border-t-[oklch(78%_0.13_85)]"
       )}>
         <div className="relative aspect-[3/4]">
-          {/* Profile Image: Monochrome-First aesthetic */}
+          {/* Profile Image: Visual Memory + Monochrome-First aesthetic */}
           <Image
             src={imageUrl}
             alt={name}
             fill
             className={cn(
               "object-cover",
-              // Default: Grayscale + slight contrast boost for "Private Gallery" feel
-              "grayscale contrast-[1.1]",
-              // Transition: Unveil color on hover (500ms)
+              // Smooth transition for grayscale fade-in (500ms)
               "transition-[filter] duration-500 ease-out",
-              "group-hover:grayscale-0 group-hover:contrast-100",
-              // Mobile: Also unveil on focus-within (for tap states)
-              "group-focus-within:grayscale-0 group-focus-within:contrast-100"
+              // Visual Memory: Viewed models show full color, unviewed are muted (85% grayscale)
+              // Hover/focus also unveils color for unviewed cards
+              viewed 
+                ? "grayscale-0 contrast-100" 
+                : "grayscale-[0.85] contrast-[1.1] group-hover:grayscale-0 group-hover:contrast-100 group-focus-within:grayscale-0 group-focus-within:contrast-100"
             )}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             priority={priority}
