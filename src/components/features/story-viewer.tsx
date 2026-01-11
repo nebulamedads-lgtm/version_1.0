@@ -689,9 +689,6 @@ export function StoryViewer({
         <div
           key={`${group.id}-${currentStoryIndex}`}
           className="relative w-full h-full max-w-lg mx-auto flex items-center justify-center cursor-pointer"
-          style={{
-            padding: '20px 5px',
-          }}
           onPointerDown={(e) => {
             handleMouseDown();
             if (!isDesktop) handleSwipeStart(e);
@@ -706,12 +703,11 @@ export function StoryViewer({
           }}
           onClick={handleTap}
         >
-          {/* Story content wrapper - Vertical drag tracking (no animation during drag) */}
+          {/* Story content wrapper */}
           <div
-            className="relative w-full h-full bg-black/20"
+            className="relative w-full h-full"
             style={{ 
               maxHeight: 'calc(85vh - 40px)',
-              // No transforms during drag - instant close on release
             }}
           >
             {currentStory?.media_type === "video" ? (
