@@ -466,17 +466,26 @@ export function StoryViewer({
   const handleShare = async () => {
     const storyUrl = getCurrentStoryUrl();
     
-    // Pause story while share menu is active
-    pauseStory();
+    // Pause story while share menu is active - ensure it's paused
+    if (!isPaused) {
+      pauseStory();
+    }
     
     try {
       await share({
         url: storyUrl,
         title: modelName ? `Check out ${modelName}'s story on TranSpot` : 'Check out this story on TranSpot',
       });
+    } catch (error) {
+      // Handle any errors silently
+      console.error('Share error:', error);
     } finally {
-      // Resume after share completes (success or cancel)
-      resumeStory();
+      // Small delay to ensure share sheet is fully closed before resuming
+      setTimeout(() => {
+        if (isPaused) {
+          resumeStory();
+        }
+      }, 100);
     }
   };
 
@@ -712,23 +721,30 @@ export function StoryViewer({
             animate="center"
             exit="exit"
             className="absolute inset-0 flex items-center justify-center"
+            style={{ pointerEvents: 'auto' }}
           >
             {/* Inner tap handler container */}
             <div
               className="relative w-full h-full flex items-center justify-center cursor-pointer"
               onPointerDown={(e) => {
+                e.stopPropagation();
                 handleMouseDown();
                 if (!isDesktop) handleSwipeStart(e);
               }}
               onPointerUp={(e) => {
+                e.stopPropagation();
                 handleMouseUp();
                 if (!isDesktop) handleSwipeEnd(e);
               }}
               onPointerLeave={(e) => {
+                e.stopPropagation();
                 handleMouseUp();
                 if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
               }}
-              onClick={handleTap}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTap(e);
+              }}
             >
               {/* Story content wrapper */}
               <div className="relative w-full h-full">
