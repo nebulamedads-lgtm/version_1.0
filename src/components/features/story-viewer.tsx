@@ -755,8 +755,7 @@ export function StoryViewer({
               </div>
             )}
           </div>
-          
-        </motion.div>
+        </div>
       </div>
 
       {/* Micro-Toast - Link Copied Confirmation (Electric Emerald) */}
