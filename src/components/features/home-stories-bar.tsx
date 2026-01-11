@@ -168,24 +168,40 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
       {/* Story Viewer Modal - Render when URL param exists and group is found */}
       {/* key={selectedGroup.id} forces React to recreate viewer on model change for fresh entry animation */}
       {storyId && selectedGroup && selectedModel && (() => {
-        // Get next model preview
+        // Get next model preview - use first story image (Instagram-style)
         const nextModelData = activeIndex >= 0 && activeIndex < allRecentGroups.length - 1
           ? allRecentGroups[activeIndex + 1]
+          : null;
+        const nextGroupStories = nextModelData?.group.stories || [];
+        const nextFirstStory = nextGroupStories.length > 0 
+          ? [...nextGroupStories].sort((a, b) => {
+              const dateA = new Date(a.posted_date || a.created_at);
+              const dateB = new Date(b.posted_date || b.created_at);
+              return dateA.getTime() - dateB.getTime(); // Oldest first
+            })[0]
           : null;
         const nextPreview = nextModelData ? {
           name: nextModelData.model.name,
           imageUrl: nextModelData.model.image_url,
-          coverUrl: nextModelData.group.cover_url,
+          storyMediaUrl: nextFirstStory?.media_url || nextModelData.group.cover_url,
         } : null;
 
-        // Get prev model preview
+        // Get prev model preview - use first story image (Instagram-style)
         const prevModelData = activeIndex > 0
           ? allRecentGroups[activeIndex - 1]
+          : null;
+        const prevGroupStories = prevModelData?.group.stories || [];
+        const prevFirstStory = prevGroupStories.length > 0
+          ? [...prevGroupStories].sort((a, b) => {
+              const dateA = new Date(a.posted_date || a.created_at);
+              const dateB = new Date(b.posted_date || b.created_at);
+              return dateA.getTime() - dateB.getTime(); // Oldest first
+            })[0]
           : null;
         const prevPreview = prevModelData ? {
           name: prevModelData.model.name,
           imageUrl: prevModelData.model.image_url,
-          coverUrl: prevModelData.group.cover_url,
+          storyMediaUrl: prevFirstStory?.media_url || prevModelData.group.cover_url,
         } : null;
 
         return (

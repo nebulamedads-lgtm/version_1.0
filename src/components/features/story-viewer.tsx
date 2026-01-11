@@ -12,7 +12,7 @@ import { useShare } from "@/hooks/use-share";
 interface ModelPreview {
   name: string;
   imageUrl: string;
-  coverUrl?: string;
+  storyMediaUrl?: string; // First story image from next/prev group (Instagram-style)
 }
 
 interface StoryViewerProps {
@@ -611,9 +611,9 @@ export function StoryViewer({
             margin: '20px 5px',
           }}
         >
-          {/* Just the image - no blur, no zoom, no overlays */}
+          {/* Just the next/prev story image - no blur, no zoom, no overlays */}
           <Image
-            src={getImageUrl(preview.coverUrl || preview.imageUrl)}
+            src={getImageUrl(preview.storyMediaUrl || preview.imageUrl)}
             alt={preview.name}
             fill
             className="object-contain"
