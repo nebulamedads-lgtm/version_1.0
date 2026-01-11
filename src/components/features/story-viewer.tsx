@@ -90,6 +90,7 @@ export function StoryViewer({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isAnimatingCube, setIsAnimatingCube] = useState(false); // Track cube animation state
 
   // Framer Motion values for Tinder-style drag
   const dragX = useMotionValue(0);
@@ -103,20 +104,48 @@ export function StoryViewer({
   // Cube width is the viewport width, so rotation happens at the edge
   const cubeWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
   
-  // Current card: rotates like a cube face (rotateY based on drag)
-  // Maps drag distance to rotation angle: full drag = 90 degrees
-  const currentRotateY = useTransform(animatedX, [-cubeWidth, 0, cubeWidth], [-90, 0, 90]);
-  const currentOpacity = useTransform(animatedX, [-cubeWidth * 0.5, 0, cubeWidth * 0.5], [0, 1, 0]);
+  // Animation value for cube rotation (only animates after drag release)
+  const cubeRotation = useMotionValue(0);
+  const animatedCubeRotation = useSpring(cubeRotation, { 
+    stiffness: 500, 
+    damping: 40,
+    mass: 0.3
+  });
   
-  // Next card (right side): rotates in from the right (when dragging left)
-  const nextRotateY = useTransform(animatedX, [-cubeWidth, 0], [0, 90]);
-  const nextOpacity = useTransform(animatedX, [-cubeWidth * 0.5, 0], [1, 0]);
-  const nextZ = useTransform(animatedX, [-cubeWidth, 0], [cubeWidth / 2, 0]);
+  // Current card: rotates like a cube face (only during animation, not during drag)
+  const currentRotateY = useTransform(animatedCubeRotation, (r) => r);
+  const currentOpacity = useTransform(animatedCubeRotation, (r) => {
+    const progress = Math.abs(r) / 90;
+    return Math.max(0, 1 - progress * 0.3);
+  });
   
-  // Prev card (left side): rotates in from the left (when dragging right)
-  const prevRotateY = useTransform(animatedX, [0, cubeWidth], [-90, 0]);
-  const prevOpacity = useTransform(animatedX, [0, cubeWidth * 0.5], [0, 1]);
-  const prevZ = useTransform(animatedX, [0, cubeWidth], [cubeWidth / 2, 0]);
+  // Next card (right side): rotates in from the right (when going to next)
+  const nextRotateY = useTransform(animatedCubeRotation, (r) => {
+    if (r < 0) return 90 + r; // Rotates in as current rotates out
+    return 90;
+  });
+  const nextOpacity = useTransform(animatedCubeRotation, (r) => {
+    if (r < 0) return Math.abs(r) / 90;
+    return 0;
+  });
+  const nextZ = useTransform(animatedCubeRotation, (r) => {
+    if (r < 0) return (cubeWidth / 2) * (1 + r / 90);
+    return 0;
+  });
+  
+  // Prev card (left side): rotates in from the left (when going to prev)
+  const prevRotateY = useTransform(animatedCubeRotation, (r) => {
+    if (r > 0) return -90 + r; // Rotates in as current rotates out
+    return -90;
+  });
+  const prevOpacity = useTransform(animatedCubeRotation, (r) => {
+    if (r > 0) return r / 90;
+    return 0;
+  });
+  const prevZ = useTransform(animatedCubeRotation, (r) => {
+    if (r > 0) return (cubeWidth / 2) * (1 - r / 90);
+    return 0;
+  });
 
   // Desktop detection
   const [isDesktop, setIsDesktop] = useState(false);
@@ -341,18 +370,20 @@ export function StoryViewer({
     setIsAnimating(false);
     setIsPaused(false);
     setDragY(0);
-    // Don't reset dragX here - let it reset naturally in handleDragEnd for instant feel
+    dragX.set(0);
+    cubeRotation.set(0); // Reset cube rotation
     setIsClosing(false);
     setProgress(0);
     setPausedProgress(0);
     setIsUIHidden(false);
     setIsLongPress(false);
     setIsDragging(false);
+    setIsAnimatingCube(false);
     
     // Quick reset of animation state
     setAnimationType('story');
     setSlideDirection(null);
-  }, [group.id]);
+  }, [group.id, dragX, cubeRotation]);
 
   // Handle screen tap navigation
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -393,32 +424,47 @@ export function StoryViewer({
     }
   };
 
-  // Tinder-style drag end handler - instant navigation (Instagram-style)
+  // Drag end handler - triggers smooth cube animation (Instagram-style)
   const handleDragEnd = useCallback(() => {
     const currentDragX = dragX.get();
-    const threshold = 60; // Reduced threshold for faster navigation
+    const threshold = 60; // Threshold for navigation
+    
+    // Reset drag position (no visual feedback during drag)
+    dragX.set(0);
     
     if (currentDragX < -threshold && nextGroupId && onNavigate) {
-      // Dragged left past threshold -> go to next model (instant)
-      setIsTransitioning(true); // Remove blur during transition
-      // Navigate immediately for instant transition
-      onNavigate(nextGroupId);
-      // Reset drag position instantly (no animation delay)
-      dragX.set(0);
-      // Reset transition state quickly
-      setTimeout(() => setIsTransitioning(false), 50);
+      // Dragged left past threshold -> animate cube to next story
+      setIsTransitioning(true);
+      setIsAnimatingCube(true);
+      
+      // Animate cube rotation to -90 degrees (smooth transition)
+      cubeRotation.set(-90);
+      
+      // Navigate after animation completes (smooth spring animation)
+      setTimeout(() => {
+        onNavigate(nextGroupId);
+        cubeRotation.set(0); // Reset for new story
+        setIsAnimatingCube(false);
+        setTimeout(() => setIsTransitioning(false), 50);
+      }, 350); // Smooth animation duration (matches spring timing)
     } else if (currentDragX > threshold && prevGroupId && onNavigate) {
-      // Dragged right past threshold -> go to previous model (instant)
-      setIsTransitioning(true); // Remove blur during transition
-      // Navigate immediately for instant transition
-      onNavigate(prevGroupId);
-      // Reset drag position instantly (no animation delay)
-      dragX.set(0);
-      // Reset transition state quickly
-      setTimeout(() => setIsTransitioning(false), 50);
+      // Dragged right past threshold -> animate cube to previous story
+      setIsTransitioning(true);
+      setIsAnimatingCube(true);
+      
+      // Animate cube rotation to 90 degrees (smooth transition)
+      cubeRotation.set(90);
+      
+      // Navigate after animation completes (smooth spring animation)
+      setTimeout(() => {
+        onNavigate(prevGroupId);
+        cubeRotation.set(0); // Reset for new story
+        setIsAnimatingCube(false);
+        setTimeout(() => setIsTransitioning(false), 50);
+      }, 350); // Smooth animation duration (matches spring timing)
     } else {
-      // Snap back to center
-      dragX.set(0);
+      // Snap back to center (no animation needed, already at 0)
+      cubeRotation.set(0);
     }
     
     // Resume story if paused during drag
@@ -426,9 +472,9 @@ export function StoryViewer({
       resumeStory();
     }
     setIsDragging(false);
-  }, [dragX, nextGroupId, prevGroupId, onNavigate, isPaused, isLongPress, resumeStory]);
+  }, [dragX, nextGroupId, prevGroupId, onNavigate, isPaused, isLongPress, resumeStory, cubeRotation]);
 
-  // Combined drag handler - detects horizontal vs vertical
+  // Combined drag handler - detects horizontal vs vertical (no animations during drag)
   const handleDrag = useCallback((event: any, info: { offset: { x: number; y: number } }) => {
     const { offset } = info;
     
@@ -448,20 +494,23 @@ export function StoryViewer({
     const absY = Math.abs(offset.y);
     
     if (absX > absY + 10) {
-      // Horizontal drag - for navigation
+      // Horizontal drag - track position but NO visual animation
       let constrainedX = offset.x;
       if (!nextGroupId && offset.x < 0) constrainedX = offset.x * 0.2; // Rubber band
       if (!prevGroupId && offset.x > 0) constrainedX = offset.x * 0.2;
       dragX.set(constrainedX);
+      // Keep cube rotation at 0 during drag (no animation)
+      cubeRotation.set(0);
       setDragY(0); // Reset vertical drag
     } else if (absY > absX + 10 && offset.y > 0) {
-      // Vertical drag down - for close gesture
+      // Vertical drag down - for close gesture (no animation, just tracking)
       setDragY(offset.y);
       dragX.set(0); // Reset horizontal drag
+      cubeRotation.set(0); // Keep cube at 0
     }
     
     if (!isPaused) pauseStory();
-  }, [dragX, nextGroupId, prevGroupId, isPaused, pauseStory, isLongPress]);
+  }, [dragX, nextGroupId, prevGroupId, isPaused, pauseStory, isLongPress, cubeRotation]);
 
   // Vertical drag end handler - instant close (no animation, Instagram-style)
   const handleVerticalDragEnd = useCallback(() => {
@@ -591,9 +640,9 @@ export function StoryViewer({
       <motion.div
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         style={{
-          rotateY: isDesktop ? 0 : (isNext ? nextRotateY : prevRotateY),
-          opacity: isDesktop ? 0 : (isNext ? nextOpacity : prevOpacity),
-          z: isDesktop ? 0 : (isNext ? nextZ : prevZ),
+          rotateY: isDesktop ? 0 : (isAnimatingCube ? (isNext ? nextRotateY : prevRotateY) : (isNext ? 90 : -90)),
+          opacity: isDesktop ? 0 : (isAnimatingCube ? (isNext ? nextOpacity : prevOpacity) : 0),
+          z: isDesktop ? 0 : (isAnimatingCube ? (isNext ? nextZ : prevZ) : 0),
           zIndex: 5,
           transformStyle: 'preserve-3d',
           backfaceVisibility: 'hidden',
@@ -791,11 +840,11 @@ export function StoryViewer({
         }}
       >
         
-        {/* Previous Model Preview Card (behind, left) - Hidden on desktop */}
-        {!isDesktop && <PreviewCard preview={prevModelPreview} position="prev" />}
+        {/* Previous Model Preview Card (behind, left) - Only visible during cube animation */}
+        {!isDesktop && isAnimatingCube && <PreviewCard preview={prevModelPreview} position="prev" />}
         
-        {/* Next Model Preview Card (behind, right) - Hidden on desktop */}
-        {!isDesktop && <PreviewCard preview={nextModelPreview} position="next" />}
+        {/* Next Model Preview Card (behind, right) - Only visible during cube animation */}
+        {!isDesktop && isAnimatingCube && <PreviewCard preview={nextModelPreview} position="next" />}
         
         {/* Desktop Navigation Arrows */}
         {isDesktop && (
@@ -829,8 +878,8 @@ export function StoryViewer({
           key={`${group.id}-${currentStoryIndex}`}
           className={`relative w-full h-full max-w-lg mx-auto flex items-center justify-center ${isDesktop ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
           style={{
-            rotateY: isDesktop ? 0 : currentRotateY,
-            opacity: isDesktop ? 1 : currentOpacity,
+            rotateY: isDesktop ? 0 : (isAnimatingCube ? currentRotateY : 0),
+            opacity: isDesktop ? 1 : (isAnimatingCube ? currentOpacity : 1),
             zIndex: 10,
             padding: '20px 5px',
             transformStyle: 'preserve-3d',
@@ -868,15 +917,13 @@ export function StoryViewer({
           onPointerLeave={handleMouseUp}
           onClick={!isDragging ? handleTap : undefined}
         >
-          {/* Story content wrapper - Vertical drag for instant close (no animation) */}
-          <motion.div
+          {/* Story content wrapper - Vertical drag tracking (no animation during drag) */}
+          <div
             className="relative w-full h-full bg-black/20"
             style={{ 
               maxHeight: 'calc(85vh - 40px)',
-              y: dragY,
-              // No scale/opacity animation for vertical drag - instant close like Instagram
+              // No transforms during drag - instant close on release
             }}
-            transition={{ duration: 0 }} // Instant, no animation
           >
             {currentStory?.media_type === "video" ? (
               (() => {
@@ -918,7 +965,7 @@ export function StoryViewer({
                 )}
               </div>
             )}
-          </motion.div>
+          </div>
           
           {/* Drag direction indicator overlay - Hidden on desktop */}
           <AnimatePresence>
