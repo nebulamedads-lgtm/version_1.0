@@ -87,7 +87,6 @@ export function StoryViewer({
   const [nextModelName, setNextModelName] = useState<string | null>(null); // For transition indicator
   
   // Swipe physics state
-  const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -167,22 +166,6 @@ export function StoryViewer({
         opacity: { duration: 0.15 },
       },
     }),
-  };
-
-  // Drag-down close variants
-  const dragCloseVariants = {
-    initial: { y: 0, scale: 1, opacity: 1 },
-    dragging: (dragY: number) => ({
-      y: dragY,
-      scale: Math.max(0.9, 1 - dragY / 1000),
-      opacity: Math.max(0.3, 1 - dragY / 400),
-    }),
-    exit: {
-      y: 300,
-      scale: 0.8,
-      opacity: 0,
-      transition: { duration: 0.25, ease: 'easeOut' },
-    },
   };
 
   // Pause and capture current progress
@@ -342,7 +325,6 @@ export function StoryViewer({
     setCurrentStoryIndex(0);
     setIsAnimating(false);
     setIsPaused(false);
-    setDragY(0);
     dragX.set(0); // Reset Framer Motion value
     setIsClosing(false);
     setProgress(0);
@@ -852,37 +834,10 @@ export function StoryViewer({
           onPointerLeave={handleMouseUp}
           onClick={!isDragging ? handleTap : undefined}
         >
-          {/* Vertical drag wrapper for close gesture - Disabled on desktop */}
-          <motion.div
+          {/* Story content wrapper - No vertical drag */}
+          <div
             className="relative w-full h-full bg-black/20"
             style={{ maxHeight: 'calc(85vh - 40px)' }}
-            drag={isDesktop ? false : "y"}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.3}
-            onDrag={isDesktop ? undefined : (e, info) => {
-              // Only handle vertical drag if it's clearly vertical
-              if (Math.abs(info.offset.y) > Math.abs(info.offset.x) + 10 && info.offset.y > 0) {
-                setDragY(info.offset.y);
-                setIsDragging(true);
-                if (!isPaused) pauseStory();
-              }
-            }}
-            onDragEnd={isDesktop ? undefined : (e, info) => {
-              if (info.offset.y > 100) {
-                handleClose();
-              } else {
-                setDragY(0);
-                setIsDragging(false);
-                if (isPaused && !isLongPress) {
-                  resumeStory();
-                }
-              }
-            }}
-            animate={{
-              y: dragY,
-              scale: Math.max(0.9, 1 - dragY / 1000),
-            }}
-            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
           >
             {currentStory?.media_type === "video" ? (
               (() => {
@@ -924,7 +879,7 @@ export function StoryViewer({
                 )}
               </div>
             )}
-          </motion.div>
+          </div>
           
           {/* Drag direction indicator overlay - Hidden on desktop */}
           <AnimatePresence>
@@ -952,16 +907,6 @@ export function StoryViewer({
         </motion.div>
       </div>
 
-      {/* Vertical swipe indicator when dragging down - Glassmorphism */}
-      {isDragging && dragY > 50 && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[102]">
-          <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-5 py-2.5">
-            <span className="text-white/90 text-sm font-medium">
-              {dragY > 100 ? '↓ Release to close' : '↓ Swipe down to close'}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Horizontal swipe indicator - shows when swiping between models - Hidden on desktop */}
       {!isDesktop && isDragging && Math.abs(dragX.get()) > 30 && (
