@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { X, Share2, Check, Link2 } from "lucide-react";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { StoryGroup } from "@/types";
 import { getImageUrl } from "@/lib/utils";
 import { useShare } from "@/hooks/use-share";
@@ -59,14 +60,15 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
   const [storyStartTime, setStoryStartTime] = useState<number>(0); // Timestamp when story started
   const [pausedProgress, setPausedProgress] = useState<number>(0); // Progress when paused
   const [animationType, setAnimationType] = useState<'story' | 'model'>('story');
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [nextModelName, setNextModelName] = useState<string | null>(null); // For transition indicator
   
   // Swipe physics state
   const [dragY, setDragY] = useState(0);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const touchStartY = useRef<number | null>(null);
-  const touchStartX = useRef<number | null>(null);
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,6 +84,50 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
   });
   const currentStory = stories[currentStoryIndex];
   const duration = currentStory?.duration || 5;
+
+  // Framer Motion variants for model transitions
+  const slideVariants = {
+    enter: (direction: 'left' | 'right' | null) => ({
+      x: direction === 'left' ? '100%' : direction === 'right' ? '-100%' : 0,
+      opacity: 0,
+      scale: 0.95,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        x: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.2 },
+      },
+    },
+    exit: (direction: 'left' | 'right' | null) => ({
+      x: direction === 'left' ? '-100%' : direction === 'right' ? '100%' : 0,
+      opacity: 0,
+      scale: 0.95,
+      transition: {
+        x: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.15 },
+      },
+    }),
+  };
+
+  // Drag-down close variants
+  const dragCloseVariants = {
+    initial: { y: 0, scale: 1, opacity: 1 },
+    dragging: (dragY: number) => ({
+      y: dragY,
+      scale: Math.max(0.9, 1 - dragY / 1000),
+      opacity: Math.max(0.3, 1 - dragY / 400),
+    }),
+    exit: {
+      y: 300,
+      scale: 0.8,
+      opacity: 0,
+      transition: { duration: 0.25, ease: 'easeOut' },
+    },
+  };
 
   // Pause and capture current progress
   const pauseStory = useCallback(() => {
@@ -107,18 +153,27 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
       longPressTimerRef.current = null;
     }
     
-    // Animate out then close
+    // Set closing state - Framer Motion will handle the animation
     setIsClosing(true);
+    setSlideDirection(null); // No horizontal slide on close
+    
+    // Delay actual close to allow exit animation
     setTimeout(() => {
       onClose();
-    }, 200);
+    }, 250);
   }, [onClose]);
 
   // Navigation helpers - Model transitions
   const handleNextModel = useCallback(() => {
     if (nextGroupId && onNavigate) {
       setAnimationType('model');
-      onNavigate(nextGroupId);
+      setSlideDirection('left'); // Content slides LEFT (new content comes from right)
+      setIsTransitioning(true);
+      
+      // Small delay to allow exit animation to start
+      setTimeout(() => {
+        onNavigate(nextGroupId);
+      }, 50);
     } else {
       handleClose();
     }
@@ -127,7 +182,12 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
   const handlePrevModel = useCallback(() => {
     if (prevGroupId && onNavigate) {
       setAnimationType('model');
-      onNavigate(prevGroupId);
+      setSlideDirection('right'); // Content slides RIGHT (new content comes from left)
+      setIsTransitioning(true);
+      
+      setTimeout(() => {
+        onNavigate(prevGroupId);
+      }, 50);
     }
     // If no prevGroupId, do nothing (stay on current)
   }, [prevGroupId, onNavigate]);
@@ -227,16 +287,20 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
     setIsAnimating(false);
     setIsPaused(false);
     setDragY(0);
+    setDragX(0);
     setIsClosing(false);
     setProgress(0);
     setPausedProgress(0);
     setIsUIHidden(false);
     setIsLongPress(false);
-    // Note: animationType is set before navigation, so we keep it for the incoming animation
-    // Reset to 'story' after the animation completes
+    setIsTransitioning(false);
+    
+    // Reset slide direction after animation completes
     const resetTimer = setTimeout(() => {
       setAnimationType('story');
-    }, 500);
+      setSlideDirection(null);
+    }, 400);
+    
     return () => clearTimeout(resetTimer);
   }, [group.id]);
 
@@ -279,108 +343,67 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
     }
   };
 
-  // Touch handlers with swipe physics - Applied to outermost container
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-    touchStartX.current = e.touches[0].clientX;
-    setIsDragging(false);
-    setDragX(0);
+  // Framer Motion pan handler for drag-down close
+  const handlePanEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset, velocity } = info;
+    
+    // Horizontal swipe detection (for model navigation)
+    if (Math.abs(offset.x) > 80 || Math.abs(velocity.x) > 500) {
+      if (offset.x < 0 || velocity.x < -500) {
+        // Swiped LEFT -> next model
+        handleNextModel();
+      } else if (offset.x > 0 || velocity.x > 500) {
+        // Swiped RIGHT -> previous model
+        handlePrevModel();
+      }
+      return;
+    }
+    
+    // Vertical swipe detection (for close)
+    if (offset.y > 100 || velocity.y > 500) {
+      handleClose();
+      return;
+    }
+    
+    // Reset drag state if no action taken
     setDragY(0);
-    
-    // Start long press timer - triggers UI hide
-    longPressTimerRef.current = setTimeout(() => {
-      pauseStory();
-      setIsUIHidden(true);
-      setIsLongPress(true);
-    }, 150);
-  };
+    setDragX(0);
+    setIsDragging(false);
+    if (isPaused && !isLongPress) {
+      resumeStory();
+    }
+  }, [handleNextModel, handlePrevModel, handleClose, isPaused, isLongPress, resumeStory]);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    // Prevent browser default to avoid pull-to-refresh
-    e.preventDefault();
+  const handlePan = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset } = info;
     
-    // Cancel long press if moving
+    // Cancel long press if panning
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }
     
-    // If was in long press mode, exit it when dragging starts
+    // Exit long press mode if dragging
     if (isLongPress && !isDragging) {
       setIsUIHidden(false);
       setIsLongPress(false);
-      // Keep paused during drag
     }
-
-    if (touchStartY.current === null || touchStartX.current === null) return;
-
-    const currentY = e.touches[0].clientY;
-    const currentX = e.touches[0].clientX;
-    const deltaY = currentY - touchStartY.current;
-    const deltaX = currentX - touchStartX.current;
-
-    // Determine dominant swipe direction
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
-
-    // If horizontal swipe is dominant, track it
-    if (absX > absY && absX > 10) {
-      setIsDragging(true);
-      setDragX(deltaX);
-      if (!isPaused) {
-        pauseStory();
-      }
+    
+    setIsDragging(true);
+    
+    // Track dominant direction
+    if (Math.abs(offset.x) > Math.abs(offset.y)) {
+      setDragX(offset.x);
+      setDragY(0);
+    } else if (offset.y > 0) {
+      setDragY(offset.y);
+      setDragX(0);
     }
-    // If vertical downward swipe is dominant, track it
-    else if (deltaY > 10 && absY > absX) {
-      setIsDragging(true);
-      setDragY(deltaY);
-      if (!isPaused) {
-        pauseStory();
-      }
+    
+    if (!isPaused) {
+      pauseStory();
     }
-  };
+  }, [isLongPress, isDragging, isPaused, pauseStory]);
 
-  const handleTouchEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-    }
-
-    // Restore UI if it was hidden
-    if (isLongPress || isUIHidden) {
-      setIsUIHidden(false);
-      setIsLongPress(false);
-      resumeStory();
-    }
-
-    const swipeThreshold = 50; // Minimum distance for a swipe
-
-    // Check for horizontal swipe (model navigation - skips remaining stories)
-    if (Math.abs(dragX) > swipeThreshold) {
-      if (dragX < 0) {
-        // Swiped LEFT -> jump to next model immediately
-        handleNextModel();
-      } else {
-        // Swiped RIGHT -> jump to previous model immediately
-        handlePrevModel();
-      }
-    }
-    // Check for vertical swipe down (close)
-    else if (dragY > 100) {
-      handleClose();
-    }
-
-    // Reset all swipe state
-    touchStartY.current = null;
-    touchStartX.current = null;
-    setDragX(0);
-    setDragY(0);
-    setIsDragging(false);
-    // Note: Don't unpause here if was long press - handled above
-    // If paused due to drag (not long press), resume
-    if (!isLongPress && isPaused && !isUIHidden) {
-      resumeStory();
-    }
-  };
 
   // Block context menu (long press menu on mobile)
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -480,11 +503,6 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
     ? modelImage 
     : group.cover_url;
 
-  // Calculate scale based on drag distance (subtle shrink effect)
-  const dragScale = Math.max(0.9, 1 - dragY / 1000);
-  // Calculate opacity based on drag distance
-  const dragOpacity = Math.max(0, 1 - dragY / 400);
-
   // Get portal container - render outside main content to avoid blur
   const portalContainer = typeof document !== 'undefined' 
     ? document.getElementById('story-portal') || document.body 
@@ -497,28 +515,26 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
 
   // Render via portal to #story-portal (outside #main-content blur scope)
   return createPortal(
-    <div
-      ref={containerRef}
-      data-story-viewer="true"
-      // Fix pull-to-refresh: touch-none prevents browser gestures, overscroll-y-none prevents overscroll
-      // select-none prevents text selection, cursor-pointer for tap feedback
-      className="fixed inset-0 z-[100] touch-none overscroll-y-none select-none"
-      // Block context menu and apply iOS-specific styles
-      onContextMenu={handleContextMenu}
-      // Touch handlers on outermost container to catch all events
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      style={{
-        // Critical for iOS Safari - prevents long-press callout
-        WebkitTouchCallout: 'none',
-        // Prevent any user selection
-        WebkitUserSelect: 'none',
-        // Background fades on drag
-        opacity: isClosing ? 0 : dragOpacity,
-        transition: isClosing ? 'opacity 0.2s ease-out' : 'none',
-      }}
-    >
+    <AnimatePresence>
+      {!isClosing && (
+        <motion.div
+          ref={containerRef}
+          data-story-viewer="true"
+          // Fix pull-to-refresh: touch-none prevents browser gestures, overscroll-y-none prevents overscroll
+          // select-none prevents text selection, cursor-pointer for tap feedback
+          className="fixed inset-0 z-[100] touch-none overscroll-y-none select-none"
+          // Block context menu and apply iOS-specific styles
+          onContextMenu={handleContextMenu}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          style={{
+            // Critical for iOS Safari - prevents long-press callout
+            WebkitTouchCallout: 'none',
+            // Prevent any user selection
+            WebkitUserSelect: 'none',
+          }}
+        >
       {/* Dark overlay - the page content behind is already blurred via CSS */}
       <div 
         className="absolute inset-0 bg-[#050A14]/40"
@@ -649,75 +665,80 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
         </button>
       </div>
 
-      {/* Story Content Wrapper - Transforms on drag (not the background) */}
-      <div
-        key={`${group.id}-${currentStoryIndex}`}
-        className={`relative w-full h-full max-w-lg mx-auto cursor-pointer flex items-center justify-center ${
-          animationType === 'story'
-            ? 'animate-in fade-in zoom-in-95 duration-300'
-            : 'animate-in slide-in-from-right-full duration-500 ease-out'
-        }`}
-        onClick={handleTap}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{
-          // Transform only the content, not the black background
-          transform: `translate3d(0, ${dragY}px, 0) scale(${dragScale})`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-        }}
-      >
-        {/* Story Media Container */}
-        <div 
-          className="relative w-full h-full" 
-          style={{ maxHeight: '85vh' }}
+      {/* AnimatePresence for model transitions */}
+      <AnimatePresence mode="wait" custom={slideDirection}>
+        <motion.div
+          key={group.id} // Key change triggers animation
+          custom={slideDirection}
+          variants={slideVariants}
+          initial={slideDirection ? "enter" : false}
+          animate="center"
+          exit="exit"
+          className="relative w-full h-full max-w-lg mx-auto cursor-pointer flex items-center justify-center"
+          // Framer Motion pan gestures
+          onPan={handlePan}
+          onPanEnd={handlePanEnd}
+          // Long press handlers
+          onPointerDown={handleMouseDown}
+          onPointerUp={handleMouseUp}
+          onPointerLeave={handleMouseUp}
+          // Tap handler
+          onClick={handleTap}
         >
-          {currentStory?.media_type === "video" ? (
-            (() => {
-              // Hybrid video strategy: WebM for performance, MP4 as fallback
-              const mp4Url = getImageUrl(currentStory.media_url);
-              // Derive WebM URL by replacing .mp4 extension (safely handles edge cases)
-              const webmUrl = mp4Url.endsWith('.mp4') 
-                ? mp4Url.slice(0, -4) + '.webm' 
-                : mp4Url.replace(/\.mp4(\?|$)/, '.webm$1');
-              const posterUrl = getImageUrl(group.cover_url);
-              
-              return (
-                <video
-                  key={currentStory.id}
-                  className="w-full h-full object-contain pointer-events-none"
-                  poster={posterUrl}
-                  autoPlay
-                  muted
-                  playsInline
-                  onEnded={goToNext}
-                >
-                  {/* WebM first for better compression/performance on modern browsers */}
-                  <source src={webmUrl} type="video/webm" />
-                  {/* MP4 fallback for Safari and older browsers */}
-                  <source src={mp4Url} type="video/mp4" />
-                </video>
-              );
-            })()
-          ) : (
-            <div className="relative w-full h-full">
-              {mediaUrl && (
-                <Image
-                  key={currentStory?.id}
-                  src={mediaUrl}
-                  alt={`Story ${currentStoryIndex + 1}`}
-                  fill
-                  className="object-contain pointer-events-none"
-                  draggable={false}
-                  sizes="100vw"
-                  priority
-                  unoptimized
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+          {/* Inner drag container for vertical close gesture */}
+          <motion.div
+            className="relative w-full h-full"
+            style={{ maxHeight: '85vh' }}
+            animate={{
+              y: dragY,
+              scale: Math.max(0.9, 1 - dragY / 1000),
+              opacity: Math.max(0.5, 1 - dragY / 400),
+            }}
+            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+          >
+            {currentStory?.media_type === "video" ? (
+              (() => {
+                const mp4Url = getImageUrl(currentStory.media_url);
+                const webmUrl = mp4Url.endsWith('.mp4') 
+                  ? mp4Url.slice(0, -4) + '.webm' 
+                  : mp4Url.replace(/\.mp4(\?|$)/, '.webm$1');
+                const posterUrl = getImageUrl(group.cover_url);
+                
+                return (
+                  <video
+                    key={currentStory.id}
+                    className="w-full h-full object-contain pointer-events-none"
+                    poster={posterUrl}
+                    autoPlay
+                    muted
+                    playsInline
+                    onEnded={goToNext}
+                  >
+                    <source src={webmUrl} type="video/webm" />
+                    <source src={mp4Url} type="video/mp4" />
+                  </video>
+                );
+              })()
+            ) : (
+              <div className="relative w-full h-full">
+                {mediaUrl && (
+                  <Image
+                    key={currentStory?.id}
+                    src={mediaUrl}
+                    alt={`Story ${currentStoryIndex + 1}`}
+                    fill
+                    className="object-contain pointer-events-none"
+                    draggable={false}
+                    sizes="100vw"
+                    priority
+                    unoptimized
+                  />
+                )}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
 
       {/* Swipe indicator when dragging - Glassmorphism */}
       {isDragging && dragY > 50 && (
@@ -728,6 +749,32 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
             </span>
           </div>
         </div>
+      )}
+
+      {/* Horizontal swipe indicator - shows when swiping between models */}
+      {isDragging && Math.abs(dragX) > 30 && (
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[102]"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3">
+            {dragX < -30 ? (
+              <>
+                <span className="text-white/90 text-sm font-medium">
+                  {nextGroupId ? '→ Next Model' : '→ End of Stories'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-white/90 text-sm font-medium">
+                  {prevGroupId ? '← Previous Model' : '← First Story'}
+                </span>
+              </>
+            )}
+          </div>
+        </motion.div>
       )}
 
       {/* Micro-Toast - Link Copied Confirmation (Electric Emerald) */}
@@ -778,7 +825,9 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
           </button>
         </div>
       )}
-    </div>,
+        </motion.div>
+      )}
+    </AnimatePresence>,
     portalContainer
   );
 }
