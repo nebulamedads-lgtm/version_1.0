@@ -99,20 +99,24 @@ export function StoryViewer({
   const springConfig = { stiffness: 500, damping: 40, mass: 0.3 };
   const animatedX = useSpring(dragX, springConfig);
 
-  // Card stack transforms based on drag - reduced scale/opacity changes for smoother feel
-  const currentCardX = useTransform(animatedX, (x) => x);
-  const currentCardScale = useTransform(animatedX, [-200, 0, 200], [0.96, 1, 0.96]);
-  const currentCardOpacity = useTransform(animatedX, [-200, 0, 200], [0.85, 1, 0.85]);
-
-  // Next card (right side) - starts hidden, reveals as you drag left - smoother transitions
-  const nextCardX = useTransform(animatedX, [-200, 0], [0, 60]); // Starts 60px off, moves to 0
-  const nextCardScale = useTransform(animatedX, [-200, 0], [1, 0.92]);
-  const nextCardOpacity = useTransform(animatedX, [-200, -50, 0], [1, 0.9, 0]);
-
-  // Prev card (left side) - starts hidden, reveals as you drag right - smoother transitions
-  const prevCardX = useTransform(animatedX, [0, 200], [-60, 0]); // Starts -60px off, moves to 0
-  const prevCardScale = useTransform(animatedX, [0, 200], [0.92, 1]);
-  const prevCardOpacity = useTransform(animatedX, [0, 50, 200], [0, 0.9, 1]);
+  // Instagram-style cube animation transforms (3D rotation) - Mobile only
+  // Cube width is the viewport width, so rotation happens at the edge
+  const cubeWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+  
+  // Current card: rotates like a cube face (rotateY based on drag)
+  // Maps drag distance to rotation angle: full drag = 90 degrees
+  const currentRotateY = useTransform(animatedX, [-cubeWidth, 0, cubeWidth], [-90, 0, 90]);
+  const currentOpacity = useTransform(animatedX, [-cubeWidth * 0.5, 0, cubeWidth * 0.5], [0, 1, 0]);
+  
+  // Next card (right side): rotates in from the right (when dragging left)
+  const nextRotateY = useTransform(animatedX, [-cubeWidth, 0], [0, 90]);
+  const nextOpacity = useTransform(animatedX, [-cubeWidth * 0.5, 0], [1, 0]);
+  const nextZ = useTransform(animatedX, [-cubeWidth, 0], [cubeWidth / 2, 0]);
+  
+  // Prev card (left side): rotates in from the left (when dragging right)
+  const prevRotateY = useTransform(animatedX, [0, cubeWidth], [-90, 0]);
+  const prevOpacity = useTransform(animatedX, [0, cubeWidth * 0.5], [0, 1]);
+  const prevZ = useTransform(animatedX, [0, cubeWidth], [cubeWidth / 2, 0]);
 
   // Desktop detection
   const [isDesktop, setIsDesktop] = useState(false);
@@ -181,7 +185,7 @@ export function StoryViewer({
     // pausedProgress is already set, useEffect will use it to resume
   }, []);
 
-  // Close the viewer with animation
+  // Close the viewer - instant close for vertical drag (Instagram-style)
   const handleClose = useCallback(() => {
     // Clean up all timers
     if (timerRef.current) {
@@ -193,14 +197,10 @@ export function StoryViewer({
       longPressTimerRef.current = null;
     }
     
-    // Set closing state - Framer Motion will handle the animation
+    // Instant close - no animation delay (Instagram mobile behavior)
     setIsClosing(true);
-    setSlideDirection(null); // No horizontal slide on close
-    
-    // Delay actual close to allow exit animation
-    setTimeout(() => {
-      onClose();
-    }, 250);
+    setSlideDirection(null);
+    onClose();
   }, [onClose]);
 
   // Navigation helpers - Model transitions (instant, Instagram-style)
@@ -463,9 +463,10 @@ export function StoryViewer({
     if (!isPaused) pauseStory();
   }, [dragX, nextGroupId, prevGroupId, isPaused, pauseStory, isLongPress]);
 
-  // Vertical drag end handler
+  // Vertical drag end handler - instant close (no animation, Instagram-style)
   const handleVerticalDragEnd = useCallback(() => {
     if (dragY > 100) {
+      // Instant close - no animation delay
       handleClose();
     } else {
       setDragY(0);
@@ -574,7 +575,7 @@ export function StoryViewer({
     ? modelImage 
     : group.cover_url;
 
-  // Preview Card Component - Instagram-style: just the next/prev image, no overlays
+  // Preview Card Component - Instagram cube animation style
   const PreviewCard = ({ 
     preview, 
     position 
@@ -590,10 +591,12 @@ export function StoryViewer({
       <motion.div
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         style={{
-          x: isNext ? nextCardX : prevCardX,
-          scale: isNext ? nextCardScale : prevCardScale,
-          opacity: isNext ? nextCardOpacity : prevCardOpacity,
+          rotateY: isDesktop ? 0 : (isNext ? nextRotateY : prevRotateY),
+          opacity: isDesktop ? 0 : (isNext ? nextOpacity : prevOpacity),
+          z: isDesktop ? 0 : (isNext ? nextZ : prevZ),
           zIndex: 5,
+          transformStyle: 'preserve-3d',
+          backfaceVisibility: 'hidden',
         }}
       >
         <div 
@@ -601,6 +604,7 @@ export function StoryViewer({
           style={{ 
             maxHeight: 'calc(85vh - 40px)',
             margin: '20px 5px',
+            transformStyle: 'preserve-3d',
           }}
         >
           {/* Just the next/prev story image - no blur, no zoom, no overlays */}
@@ -778,8 +782,14 @@ export function StoryViewer({
         </button>
       </div>
 
-      {/* Card Stack Container - Tinder-style navigation */}
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      {/* Card Stack Container - Instagram cube animation (mobile only) */}
+      <div 
+        className="relative w-full h-full flex items-center justify-center overflow-hidden"
+        style={isDesktop ? {} : {
+          perspective: '1000px',
+          perspectiveOrigin: 'center center',
+        }}
+      >
         
         {/* Previous Model Preview Card (behind, left) - Hidden on desktop */}
         {!isDesktop && <PreviewCard preview={prevModelPreview} position="prev" />}
@@ -814,16 +824,17 @@ export function StoryViewer({
           </>
         )}
         
-        {/* Current Story Card (front) */}
+        {/* Current Story Card (front) - Instagram cube animation (mobile only) */}
         <motion.div
           key={`${group.id}-${currentStoryIndex}`}
           className={`relative w-full h-full max-w-lg mx-auto flex items-center justify-center ${isDesktop ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
           style={{
-            x: currentCardX,
-            scale: currentCardScale,
-            opacity: currentCardOpacity,
+            rotateY: isDesktop ? 0 : currentRotateY,
+            opacity: isDesktop ? 1 : currentOpacity,
             zIndex: 10,
             padding: '20px 5px',
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden',
           }}
           drag={isDesktop ? false : true}
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
@@ -857,16 +868,15 @@ export function StoryViewer({
           onPointerLeave={handleMouseUp}
           onClick={!isDragging ? handleTap : undefined}
         >
-          {/* Story content wrapper - Vertical drag for close */}
+          {/* Story content wrapper - Vertical drag for instant close (no animation) */}
           <motion.div
             className="relative w-full h-full bg-black/20"
-            style={{ maxHeight: 'calc(85vh - 40px)' }}
-            animate={{
+            style={{ 
+              maxHeight: 'calc(85vh - 40px)',
               y: dragY,
-              scale: Math.max(0.9, 1 - dragY / 1000),
-              opacity: Math.max(0.5, 1 - dragY / 400),
+              // No scale/opacity animation for vertical drag - instant close like Instagram
             }}
-            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+            transition={{ duration: 0 }} // Instant, no animation
           >
             {currentStory?.media_type === "video" ? (
               (() => {
