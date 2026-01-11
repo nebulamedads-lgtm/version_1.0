@@ -109,30 +109,27 @@ export function StoryViewer({
   const currentStory = stories[currentStoryIndex];
   const duration = currentStory?.duration || 5;
 
-  // Framer Motion variants for model transitions
+  // Framer Motion variants for model-to-model transitions
+  // Direction: 'left' = going to NEXT model, 'right' = going to PREVIOUS model
   const slideVariants = {
     enter: (direction: 'left' | 'right' | null) => ({
       x: direction === 'left' ? '100%' : direction === 'right' ? '-100%' : 0,
       opacity: 0,
-      scale: 0.95,
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.2 },
-        scale: { duration: 0.2 },
+        x: { type: 'spring', stiffness: 350, damping: 35, mass: 0.8 },
+        opacity: { duration: 0.15 },
       },
     },
     exit: (direction: 'left' | 'right' | null) => ({
-      x: direction === 'left' ? '-100%' : direction === 'right' ? '100%' : 0,
+      x: direction === 'left' ? '-50%' : direction === 'right' ? '50%' : 0,
       opacity: 0,
-      scale: 0.95,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.15 },
+        x: { type: 'spring', stiffness: 350, damping: 35, mass: 0.8 },
+        opacity: { duration: 0.12 },
       },
     }),
   };
@@ -167,14 +164,23 @@ export function StoryViewer({
     onClose();
   }, [onClose]);
 
-  // Navigation helpers - Model transitions (instant, no animation)
+  // Navigation helpers - Model transitions (with slide animation)
   const handleNextModel = useCallback(() => {
     if (nextGroupId && onNavigate) {
       setAnimationType('model');
+      setSlideDirection('left'); // Content slides LEFT (new comes from right)
       setIsTransitioning(true);
-      // Instant navigation - no animation
-      onNavigate(nextGroupId);
-      setTimeout(() => setIsTransitioning(false), 50);
+      
+      // Delay navigation to allow exit animation to start
+      // 150ms = enough time for exit to be visible, but fast enough to feel instant
+      setTimeout(() => {
+        onNavigate(nextGroupId);
+        // Reset transition state after navigation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+          setSlideDirection(null);
+        }, 300);
+      }, 150);
     } else {
       handleClose();
     }
@@ -183,10 +189,18 @@ export function StoryViewer({
   const handlePrevModel = useCallback(() => {
     if (prevGroupId && onNavigate) {
       setAnimationType('model');
+      setSlideDirection('right'); // Content slides RIGHT (new comes from left)
       setIsTransitioning(true);
-      // Instant navigation - no animation
-      onNavigate(prevGroupId);
-      setTimeout(() => setIsTransitioning(false), 50);
+      
+      // Delay navigation to allow exit animation to start
+      setTimeout(() => {
+        onNavigate(prevGroupId);
+        // Reset transition state after navigation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+          setSlideDirection(null);
+        }, 300);
+      }, 150);
     }
     // If no prevGroupId, do nothing (stay on current)
   }, [prevGroupId, onNavigate]);
@@ -303,9 +317,16 @@ export function StoryViewer({
     setIsUIHidden(false);
     setIsLongPress(false);
     
-    // Reset animation state
+    // Reset animation state - IMPORTANT: Don't reset slideDirection here
+    // as it's needed for the enter animation
     setAnimationType('story');
-    setSlideDirection(null);
+    
+    // Reset slideDirection after enter animation completes
+    const resetTimer = setTimeout(() => {
+      setSlideDirection(null);
+    }, 400);
+    
+    return () => clearTimeout(resetTimer);
   }, [group.id]);
 
   // Handle screen tap navigation (for stories within same group)
@@ -354,18 +375,18 @@ export function StoryViewer({
       hasSwiped.current = true;
       handleClose();
     } else if (absX > absY + 20 && absX > threshold) {
-      // Horizontal swipe - trigger cube animation
+      // Horizontal swipe - trigger slide animation
       hasSwiped.current = true;
       if (deltaX < -threshold && nextGroupId) {
-        // Swiped left - go to next group
+        // Swiped left - go to next group (with animation)
         handleNextModel();
       } else if (deltaX > threshold && prevGroupId) {
-        // Swiped right - go to previous group
+        // Swiped right - go to previous group (with animation)
         handlePrevModel();
       }
     }
 
-    // Clear swipe start after a short delay to allow tap detection
+    // Clear swipe start - delay slightly to prevent tap triggering
     setTimeout(() => {
       swipeStart.current = null;
       hasSwiped.current = false;
@@ -655,7 +676,7 @@ export function StoryViewer({
         </button>
       </div>
 
-      {/* Story Container */}
+      {/* Story Container - with AnimatePresence for model transitions */}
       <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
         
         {/* Desktop Navigation Arrows */}
@@ -665,7 +686,7 @@ export function StoryViewer({
             {prevGroupId && (
               <button
                 onClick={handlePrevModel}
-                className="absolute left-4 z-[101] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
+                className="absolute left-4 z-[103] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
                 aria-label="Previous story group"
               >
                 <ChevronLeft className="w-6 h-6 text-white" />
@@ -676,7 +697,7 @@ export function StoryViewer({
             {nextGroupId && (
               <button
                 onClick={handleNextModel}
-                className="absolute right-4 z-[101] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
+                className="absolute right-4 z-[103] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
                 aria-label="Next story group"
               >
                 <ChevronRight className="w-6 h-6 text-white" />
@@ -685,68 +706,93 @@ export function StoryViewer({
           </>
         )}
         
-        {/* Current Story Card */}
-        <div
-          key={`${group.id}-${currentStoryIndex}`}
-          className="relative w-full h-full flex items-center justify-center cursor-pointer"
-          onPointerDown={(e) => {
-            handleMouseDown();
-            if (!isDesktop) handleSwipeStart(e);
-          }}
-          onPointerUp={(e) => {
-            handleMouseUp();
-            if (!isDesktop) handleSwipeEnd(e);
-          }}
-          onPointerLeave={(e) => {
-            handleMouseUp();
-            if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
-          }}
-          onClick={handleTap}
-        >
-          {/* Story content wrapper */}
-          <div className="relative w-full h-full">
-            {currentStory?.media_type === "video" ? (
-              (() => {
-                const mp4Url = getImageUrl(currentStory.media_url);
-                const webmUrl = mp4Url.endsWith('.mp4') 
-                  ? mp4Url.slice(0, -4) + '.webm' 
-                  : mp4Url.replace(/\.mp4(\?|$)/, '.webm$1');
-                const posterUrl = getImageUrl(group.cover_url);
-                
-                return (
-                  <video
-                    key={currentStory.id}
-                    className="w-full h-full object-contain pointer-events-none"
-                    poster={posterUrl}
-                    autoPlay
-                    muted
-                    playsInline
-                    onEnded={goToNext}
-                  >
-                    <source src={webmUrl} type="video/webm" />
-                    <source src={mp4Url} type="video/mp4" />
-                  </video>
-                );
-              })()
-            ) : (
+        {/* Animated Story Card - AnimatePresence handles exit animations */}
+        <AnimatePresence mode="popLayout" custom={slideDirection}>
+          <motion.div
+            key={group.id} // Key by group.id so AnimatePresence detects model changes
+            custom={slideDirection}
+            variants={slideVariants}
+            initial={slideDirection ? "enter" : false}
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            {/* Inner tap handler container */}
+            <div
+              className="relative w-full h-full flex items-center justify-center cursor-pointer"
+              onPointerDown={(e) => {
+                handleMouseDown();
+                if (!isDesktop) handleSwipeStart(e);
+              }}
+              onPointerUp={(e) => {
+                handleMouseUp();
+                if (!isDesktop) handleSwipeEnd(e);
+              }}
+              onPointerLeave={(e) => {
+                handleMouseUp();
+                if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
+              }}
+              onClick={handleTap}
+            >
+              {/* Story content wrapper */}
               <div className="relative w-full h-full">
-                {mediaUrl && (
-                  <Image
-                    key={currentStory?.id}
-                    src={mediaUrl}
-                    alt={`Story ${currentStoryIndex + 1}`}
-                    fill
-                    className="object-contain pointer-events-none"
-                    draggable={false}
-                    sizes="100vw"
-                    priority
-                    unoptimized
-                  />
+                {currentStory?.media_type === "video" ? (
+                  (() => {
+                    const mp4Url = getImageUrl(currentStory.media_url);
+                    const webmUrl = mp4Url.endsWith('.mp4') 
+                      ? mp4Url.slice(0, -4) + '.webm' 
+                      : mp4Url.replace(/\.mp4(\?|$)/, '.webm$1');
+                    const posterUrl = getImageUrl(group.cover_url);
+                    
+                    return (
+                      <video
+                        key={currentStory.id}
+                        className="w-full h-full object-contain pointer-events-none"
+                        poster={posterUrl}
+                        autoPlay
+                        muted
+                        playsInline
+                        onEnded={goToNext}
+                      >
+                        <source src={webmUrl} type="video/webm" />
+                        <source src={mp4Url} type="video/mp4" />
+                      </video>
+                    );
+                  })()
+                ) : (
+                  <div className="relative w-full h-full">
+                    {mediaUrl && (
+                      <Image
+                        key={currentStory?.id}
+                        src={mediaUrl}
+                        alt={`Story ${currentStoryIndex + 1}`}
+                        fill
+                        className="object-contain pointer-events-none"
+                        draggable={false}
+                        sizes="100vw"
+                        priority
+                        unoptimized
+                      />
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+        
+        {/* Transition Overlay - Prevents flash by keeping solid black during transition */}
+        <AnimatePresence>
+          {isTransitioning && (
+            <motion.div
+              className="absolute inset-0 bg-[#050A14] z-[101] pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.3 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Micro-Toast - Link Copied Confirmation (Electric Emerald) */}
