@@ -665,13 +665,12 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
           // Transform only the content, not the black background
           transform: `translate3d(0, ${dragY}px, 0) scale(${dragScale})`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-          padding: '20px 5px', // Vertical and horizontal padding for rounded corners
         }}
       >
         {/* Story Media Container */}
         <div 
           className="relative w-full h-full" 
-          style={{ maxHeight: 'calc(85vh - 40px)' }}
+          style={{ maxHeight: '85vh' }}
         >
           {currentStory?.media_type === "video" ? (
             (() => {
