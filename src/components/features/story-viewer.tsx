@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { X, BadgeCheck, Share2, Check, Link2 } from "lucide-react";
+import { X, Share2, Check, Link2 } from "lucide-react";
 import { StoryGroup } from "@/types";
 import { getImageUrl } from "@/lib/utils";
 import { useShare } from "@/hooks/use-share";
@@ -506,7 +506,15 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
               <span className="text-white font-semibold text-sm">
                 {modelName || group.title || "Recent"}
               </span>
-              {isVerified && <BadgeCheck className="w-4 h-4 text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)] flex-shrink-0" />}
+              {isVerified && (
+                <img
+                  src="/verified-badge.svg"
+                  alt="Verified"
+                  className="w-4 h-4 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] flex-shrink-0"
+                  width={16}
+                  height={16}
+                />
+              )}
               {/* Date Display - Relative for Recent, Absolute for Pinned */}
               {currentStory?.posted_date && (
                 <span className="text-white/50 text-xs">
@@ -535,7 +543,15 @@ export function StoryViewer({ group, onClose, socialLink, modelName, modelImage,
               <span className="text-white font-semibold text-sm">
                 {modelName || group.title || "Recent"}
               </span>
-              {isVerified && <BadgeCheck className="w-4 h-4 text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)] flex-shrink-0" />}
+              {isVerified && (
+                <img
+                  src="/verified-badge.svg"
+                  alt="Verified"
+                  className="w-4 h-4 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] flex-shrink-0"
+                  width={16}
+                  height={16}
+                />
+              )}
               {/* Date Display - Relative for Recent, Absolute for Pinned */}
               {currentStory?.posted_date && (
                 <span className="text-white/50 text-xs">

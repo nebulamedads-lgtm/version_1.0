@@ -407,3 +407,33 @@
 - **Horizontal Extension:** Extended container slightly beyond content area to make left/right borders visible
 - **Transparency:** Made all container elements fully transparent to eliminate visible lines
 - **HomeStoriesBar:** Removed background bar and blur effects for fully transparent stories container
+
+## [2026-01-10] - Phase 5.4: ModelCard Visual Overhaul & Verified Badge System
+**Status:** Complete
+
+### ModelCard Visual Redesign:
+- **Icon System Update:**
+  - Replaced Heart icon with Star icon for favorites throughout the app
+  - Updated favorites feed navigation icon from Heart to Star
+  - Favorite button converted to pill shape (top-left) matching "New" tag height
+- **Verified Badge System:**
+  - Replaced BadgeCheck icon with custom verified badge SVG (`/verified-badge.svg`)
+  - Applied custom badge to ModelCard, Profile Page, and StoryViewer
+  - Badge features blue-to-purple gradient with white checkmark (scalloped star design)
+- **Layout Improvements:**
+  - Centered model name with verified badge inline
+  - Tags limited to 3 max with bullet separators (•)
+  - Tags left-aligned (first tag always visible, never cut off)
+  - Added pill-shaped container for tags with iOS 26-style right fade effect
+  - Enhanced bottom vignette gradient for better text readability on bright photos
+- **Badge Positioning:**
+  - Combined "New" badge with online status dot (top-right)
+  - "New" badge extends horizontally with online dot inside on the right
+  - Favorite star pill positioned at top-left, same vertical level as "New" badge
+  - Both badges use `py-1` and `text-xs` for consistent sizing
+
+### Component Updates:
+- **ModelCard:** Complete visual overhaul with new badge system and layout
+- **FixedHeader:** Favorites feed icon changed from Heart to Star
+- **Model Profile Page:** Added "New" badge with online dot combination
+- **StoryViewer:** Updated to use custom verified badge SVG

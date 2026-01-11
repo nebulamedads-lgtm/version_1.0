@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheck, Heart } from "lucide-react";
+import { Star } from "lucide-react";
 import { cn, getImageUrl } from "@/lib/utils";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useViewedModels } from "@/hooks/use-viewed-models";
@@ -89,54 +89,79 @@ export function ModelCard({ name, image, tags, slug, priority, isOnline, is_veri
           />
           {/* Subtle gradient overlay - clean fade for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-          {/* New Badge - Top Left (Darker Cyber Violet Glass + White Text) */}
-          {is_new && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#7A27FF]/50 backdrop-blur-xl text-white border border-[#7A27FF]/50 shadow-[0_0_15px_rgba(122,39,255,0.4)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8),0_1px_2px_rgba(0,0,0,0.6)]">
-                New
-              </span>
-            </div>
-          )}
-          {/* Online Status - Top Right */}
-          <div className="absolute top-3 right-3 z-10">
-            <StatusIndicator isOnline={isOnline} />
-          </div>
-          {/* Heart Button - Top Right (below status) - iOS Glass style */}
+          {/* Bottom readability vignette - ensures white text visibility on bright photos */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 25%, transparent 50%)"
+            }}
+          />
+          {/* Favorite Button - Top Left - Pill Style (same height as New tag) */}
           <button
             onClick={handleFavoriteClick}
-            className="absolute top-12 right-3 z-10 p-2.5 rounded-full bg-black/30 backdrop-blur-xl border border-white/15 hover:bg-white/20 hover:border-white/30 active:scale-95 transition-all duration-300 shadow-lg shadow-black/20"
-            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+            className="absolute top-3 left-3 z-10 inline-flex items-center justify-center px-3 py-1 text-xs rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-[#D4AF37]/40 active:scale-95 transition-all duration-300 shadow-lg shadow-black/30"
+            aria-label={favorite ? "Remove from starred" : "Add to starred"}
           >
-            <Heart
-              size={18}
+            <Star
+              size={16}
               className={cn(
                 "transition-all duration-300",
-                favorite ? "fill-[#D4AF37] text-[#D4AF37] drop-shadow-[0_0_6px_rgba(212,175,55,0.6)]" : "fill-transparent text-white/90"
+                favorite 
+                  ? "fill-[#D4AF37] text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.7)]" 
+                  : "fill-transparent text-white/90 hover:text-[#D4AF37]/70"
               )}
             />
           </button>
+          {/* New Badge with Online Dot - Top Right (same level as Favorite) */}
+          {is_new ? (
+            <div className="absolute top-3 right-3 z-10">
+              <span className="inline-flex items-center gap-2 px-3 py-1 pr-2 rounded-full text-xs font-semibold bg-[#7A27FF]/50 backdrop-blur-xl text-white border border-[#7A27FF]/50 shadow-[0_0_15px_rgba(122,39,255,0.4)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8),0_1px_2px_rgba(0,0,0,0.6)]">
+                New
+                <StatusIndicator isOnline={isOnline} />
+              </span>
+            </div>
+          ) : (
+            <div className="absolute top-3 right-3 z-10">
+              <StatusIndicator isOnline={isOnline} />
+            </div>
+          )}
           {/* Name and Tags - Bottom */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-bold text-white">{name}</h3>
-              {/* Verified Checkmark - Gold for luxury branding */}
+            {/* Centered name container */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h3 className="text-lg font-bold text-white text-center tracking-tight">{name}</h3>
               {is_verified && (
-                <BadgeCheck
-                  size={18}
-                  className="text-[oklch(78%_0.13_85)] flex-shrink-0"
-                  strokeWidth={2.5}
-                />
+                <span className="relative inline-flex items-center justify-center flex-shrink-0">
+                  {/* Verified Badge - Custom SVG from public/verified-badge.svg */}
+                  <img
+                    src="/verified-badge.svg"
+                    alt="Verified"
+                    className="w-5 h-5 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                    width={20}
+                    height={20}
+                  />
+                </span>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag: string, index: number) => (
-                <span
-                  key={index}
-                  className="text-xs text-muted-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
+            {/* Tags - limited to 2-3, first tag always visible (left-aligned) with pill shape and right fade */}
+            <div className="relative">
+              <div className="flex items-center justify-start gap-2 overflow-x-auto scrollbar-hide px-2 py-1 rounded-full bg-black/20 backdrop-blur-sm">
+                {tags.slice(0, 3).map((tag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="text-xs text-white/70 whitespace-nowrap flex-shrink-0"
+                  >
+                    {tag}{index < Math.min(tags.length, 3) - 1 && <span className="ml-2 text-white/40">•</span>}
+                  </span>
+                ))}
+              </div>
+              {/* Right fade overlay - iOS 26 style subtle vanish effect */}
+              <div 
+                className="absolute top-0 right-0 bottom-0 w-12 pointer-events-none rounded-r-full"
+                style={{
+                  background: "linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.15) 60%, rgba(0, 0, 0, 0.4) 100%)"
+                }}
+              />
             </div>
           </div>
         </div>
@@ -153,9 +178,9 @@ export function ModelCardSkeleton() {
         <div className="absolute top-3 right-3">
           <div className="h-4 w-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10" />
         </div>
-        {/* Glass heart button skeleton */}
-        <div className="absolute top-12 right-3">
-          <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/10" />
+        {/* Glass favorite pill skeleton */}
+        <div className="absolute top-3 left-3">
+          <div className="h-6 w-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/10" />
         </div>
         {/* Frosted bottom info skeleton */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/40 to-transparent backdrop-blur-[2px]">

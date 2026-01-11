@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryState } from 'nuqs';
-import { MapPin, Sparkles, Heart, LucideIcon } from 'lucide-react';
+import { MapPin, Sparkles, Star, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FixedHeaderProps {
@@ -72,7 +72,7 @@ export function FixedHeader({ userCity, nav, header }: FixedHeaderProps) {
         <NavButton
           active={feed === 'favorites'}
           onClick={() => setFeed('favorites')}
-          icon={Heart}
+          icon={Star}
           label={nav.favorites}
           variant="gold"
         />
