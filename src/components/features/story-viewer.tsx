@@ -95,8 +95,8 @@ export function StoryViewer({
   const dragX = useMotionValue(0);
   const dragProgress = useTransform(dragX, [-200, 0, 200], [-1, 0, 1]); // -1 = full left, 1 = full right
 
-  // Spring config for smooth snap-back - optimized for smoothness
-  const springConfig = { stiffness: 300, damping: 35, mass: 0.5 };
+  // Spring config for instant, responsive transitions (Instagram-style)
+  const springConfig = { stiffness: 500, damping: 40, mass: 0.3 };
   const animatedX = useSpring(dragX, springConfig);
 
   // Card stack transforms based on drag - reduced scale/opacity changes for smoother feel
@@ -203,19 +203,17 @@ export function StoryViewer({
     }, 250);
   }, [onClose]);
 
-  // Navigation helpers - Model transitions
+  // Navigation helpers - Model transitions (instant, Instagram-style)
   const handleNextModel = useCallback(() => {
     if (nextGroupId && onNavigate) {
       setAnimationType('model');
       setSlideDirection('left'); // Content slides LEFT (new content comes from right)
       setIsTransitioning(true); // Remove blur during transition
       
-      // Small delay to allow exit animation to start
-      setTimeout(() => {
-        onNavigate(nextGroupId);
-        // Reset transition state after navigation completes
-        setTimeout(() => setIsTransitioning(false), 100);
-      }, 50);
+      // Navigate immediately for instant transition
+      onNavigate(nextGroupId);
+      // Reset transition state quickly
+      setTimeout(() => setIsTransitioning(false), 50);
     } else {
       handleClose();
     }
@@ -227,11 +225,10 @@ export function StoryViewer({
       setSlideDirection('right'); // Content slides RIGHT (new content comes from left)
       setIsTransitioning(true); // Remove blur during transition
       
-      setTimeout(() => {
-        onNavigate(prevGroupId);
-        // Reset transition state after navigation completes
-        setTimeout(() => setIsTransitioning(false), 100);
-      }, 50);
+      // Navigate immediately for instant transition
+      onNavigate(prevGroupId);
+      // Reset transition state quickly
+      setTimeout(() => setIsTransitioning(false), 50);
     }
     // If no prevGroupId, do nothing (stay on current)
   }, [prevGroupId, onNavigate]);
@@ -337,13 +334,14 @@ export function StoryViewer({
     }
   }, [isTransitioning]);
 
-  // Reset state when group changes
+  // Reset state when group changes - optimized for instant transitions
   useEffect(() => {
+    // Only reset essential state, keep drag position for smooth transition
     setCurrentStoryIndex(0);
     setIsAnimating(false);
     setIsPaused(false);
     setDragY(0);
-    dragX.set(0); // Reset Framer Motion value
+    // Don't reset dragX here - let it reset naturally in handleDragEnd for instant feel
     setIsClosing(false);
     setProgress(0);
     setPausedProgress(0);
@@ -351,13 +349,10 @@ export function StoryViewer({
     setIsLongPress(false);
     setIsDragging(false);
     
-    const resetTimer = setTimeout(() => {
-      setAnimationType('story');
-      setSlideDirection(null);
-    }, 400);
-    
-    return () => clearTimeout(resetTimer);
-  }, [group.id, dragX]);
+    // Quick reset of animation state
+    setAnimationType('story');
+    setSlideDirection(null);
+  }, [group.id]);
 
   // Handle screen tap navigation
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -398,32 +393,29 @@ export function StoryViewer({
     }
   };
 
-  // Tinder-style drag end handler - optimized for smoothness
+  // Tinder-style drag end handler - instant navigation (Instagram-style)
   const handleDragEnd = useCallback(() => {
     const currentDragX = dragX.get();
     const threshold = 60; // Reduced threshold for faster navigation
     
     if (currentDragX < -threshold && nextGroupId && onNavigate) {
-      // Dragged left past threshold -> go to next model
+      // Dragged left past threshold -> go to next model (instant)
       setIsTransitioning(true); // Remove blur during transition
-      // Animate card off screen before navigating
-      dragX.set(-300);
-      setTimeout(() => {
-        onNavigate(nextGroupId);
-        dragX.set(0); // Reset for new model
-        // Reset transition state after navigation completes
-        setTimeout(() => setIsTransitioning(false), 100);
-      }, 150);
+      // Navigate immediately for instant transition
+      onNavigate(nextGroupId);
+      // Reset drag position instantly (no animation delay)
+      dragX.set(0);
+      // Reset transition state quickly
+      setTimeout(() => setIsTransitioning(false), 50);
     } else if (currentDragX > threshold && prevGroupId && onNavigate) {
-      // Dragged right past threshold -> go to previous model
+      // Dragged right past threshold -> go to previous model (instant)
       setIsTransitioning(true); // Remove blur during transition
-      dragX.set(300);
-      setTimeout(() => {
-        onNavigate(prevGroupId);
-        dragX.set(0);
-        // Reset transition state after navigation completes
-        setTimeout(() => setIsTransitioning(false), 100);
-      }, 150);
+      // Navigate immediately for instant transition
+      onNavigate(prevGroupId);
+      // Reset drag position instantly (no animation delay)
+      dragX.set(0);
+      // Reset transition state quickly
+      setTimeout(() => setIsTransitioning(false), 50);
     } else {
       // Snap back to center
       dragX.set(0);
@@ -835,8 +827,9 @@ export function StoryViewer({
           }}
           drag={isDesktop ? false : true}
           dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-          dragElastic={0.5}
+          dragElastic={0.3}
           dragMomentum={false}
+          whileDrag={{ cursor: 'grabbing' }}
           onDrag={isDesktop ? undefined : handleDrag}
           onDragEnd={isDesktop ? undefined : (e, info) => {
             // Check if it was a horizontal or vertical drag
