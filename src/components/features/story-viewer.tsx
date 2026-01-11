@@ -241,7 +241,12 @@ export function StoryViewer({
 
   // Progress tracking with JavaScript interval (replaces CSS-only approach)
   useEffect(() => {
-    if (!currentStory || isPaused) return;
+    if (!currentStory) return;
+
+    // If paused, don't start or continue the interval
+    if (isPaused) {
+      return;
+    }
 
     // Set start time for this story
     const now = Date.now();
@@ -253,6 +258,12 @@ export function StoryViewer({
     
     // Progress update interval (60fps feel)
     const progressInterval = setInterval(() => {
+      // Double-check pause state inside interval to prevent updates when paused
+      if (isPaused) {
+        clearInterval(progressInterval);
+        return;
+      }
+      
       const elapsed = Date.now() - adjustedStartTime;
       const newProgress = Math.min((elapsed / (duration * 1000)) * 100, 100);
       setProgress(newProgress);
@@ -466,10 +477,8 @@ export function StoryViewer({
   const handleShare = async () => {
     const storyUrl = getCurrentStoryUrl();
     
-    // Pause story while share menu is active - ensure it's paused
-    if (!isPaused) {
-      pauseStory();
-    }
+    // Pause story immediately - capture current progress and stop updates
+    pauseStory();
     
     try {
       await share({
@@ -482,9 +491,7 @@ export function StoryViewer({
     } finally {
       // Small delay to ensure share sheet is fully closed before resuming
       setTimeout(() => {
-        if (isPaused) {
-          resumeStory();
-        }
+        resumeStory();
       }, 100);
     }
   };
