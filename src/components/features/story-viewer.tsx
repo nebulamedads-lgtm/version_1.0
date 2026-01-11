@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { X, Share2, Check, Link2 } from "lucide-react";
+import { X, Share2, Check, Link2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { StoryGroup } from "@/types";
 import { getImageUrl } from "@/lib/utils";
@@ -113,6 +113,18 @@ export function StoryViewer({
   const prevCardX = useTransform(animatedX, [0, 200], [-80, 0]); // Starts -80px off, moves to 0
   const prevCardScale = useTransform(animatedX, [0, 200], [0.85, 1]);
   const prevCardOpacity = useTransform(animatedX, [0, 50, 200], [0, 0.8, 1]);
+
+  // Desktop detection
+  const [isDesktop, setIsDesktop] = useState(false);
+  
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -786,16 +798,43 @@ export function StoryViewer({
       {/* Card Stack Container - Tinder-style navigation */}
       <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
         
-        {/* Previous Model Preview Card (behind, left) */}
-        <PreviewCard preview={prevModelPreview} position="prev" />
+        {/* Previous Model Preview Card (behind, left) - Hidden on desktop */}
+        {!isDesktop && <PreviewCard preview={prevModelPreview} position="prev" />}
         
-        {/* Next Model Preview Card (behind, right) */}
-        <PreviewCard preview={nextModelPreview} position="next" />
+        {/* Next Model Preview Card (behind, right) - Hidden on desktop */}
+        {!isDesktop && <PreviewCard preview={nextModelPreview} position="next" />}
+        
+        {/* Desktop Navigation Arrows */}
+        {isDesktop && (
+          <>
+            {/* Previous Arrow */}
+            {prevGroupId && (
+              <button
+                onClick={handlePrevModel}
+                className="absolute left-4 z-[101] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
+                aria-label="Previous story group"
+              >
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+            )}
+            
+            {/* Next Arrow */}
+            {nextGroupId && (
+              <button
+                onClick={handleNextModel}
+                className="absolute right-4 z-[101] w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xl border border-white/20 hover:bg-black/60 hover:border-white/30 transition-all active:scale-95"
+                aria-label="Next story group"
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </button>
+            )}
+          </>
+        )}
         
         {/* Current Story Card (front) */}
         <motion.div
           key={`${group.id}-${currentStoryIndex}`}
-          className="relative w-full h-full max-w-lg mx-auto cursor-grab active:cursor-grabbing flex items-center justify-center"
+          className={`relative w-full h-full max-w-lg mx-auto flex items-center justify-center ${isDesktop ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
           style={{
             x: currentCardX,
             scale: currentCardScale,
@@ -803,24 +842,24 @@ export function StoryViewer({
             zIndex: 10,
             padding: '20px 5px',
           }}
-          drag="x"
+          drag={isDesktop ? false : "x"}
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.7}
-          onDrag={handleHorizontalDrag}
-          onDragEnd={handleDragEnd}
+          onDrag={isDesktop ? undefined : handleHorizontalDrag}
+          onDragEnd={isDesktop ? undefined : handleDragEnd}
           onPointerDown={handleMouseDown}
           onPointerUp={handleMouseUp}
           onPointerLeave={handleMouseUp}
           onClick={!isDragging ? handleTap : undefined}
         >
-          {/* Vertical drag wrapper for close gesture */}
+          {/* Vertical drag wrapper for close gesture - Disabled on desktop */}
           <motion.div
             className="relative w-full h-full bg-black/20"
             style={{ maxHeight: 'calc(85vh - 40px)' }}
-            drag="y"
+            drag={isDesktop ? false : "y"}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.3}
-            onDrag={(e, info) => {
+            onDrag={isDesktop ? undefined : (e, info) => {
               // Only handle vertical drag if it's clearly vertical
               if (Math.abs(info.offset.y) > Math.abs(info.offset.x) + 10 && info.offset.y > 0) {
                 setDragY(info.offset.y);
@@ -828,7 +867,7 @@ export function StoryViewer({
                 if (!isPaused) pauseStory();
               }
             }}
-            onDragEnd={(e, info) => {
+            onDragEnd={isDesktop ? undefined : (e, info) => {
               if (info.offset.y > 100) {
                 handleClose();
               } else {
@@ -887,9 +926,9 @@ export function StoryViewer({
             )}
           </motion.div>
           
-          {/* Drag direction indicator overlay */}
+          {/* Drag direction indicator overlay - Hidden on desktop */}
           <AnimatePresence>
-            {isDragging && Math.abs(dragX.get()) > 30 && (
+            {!isDesktop && isDragging && Math.abs(dragX.get()) > 30 && (
               <motion.div
                 className="absolute inset-0 pointer-events-none flex items-center justify-center z-20"
                 initial={{ opacity: 0 }}
@@ -924,8 +963,8 @@ export function StoryViewer({
         </div>
       )}
 
-      {/* Horizontal swipe indicator - shows when swiping between models */}
-      {isDragging && Math.abs(dragX) > 30 && (
+      {/* Horizontal swipe indicator - shows when swiping between models - Hidden on desktop */}
+      {!isDesktop && isDragging && Math.abs(dragX.get()) > 30 && (
         <motion.div 
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[102]"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -933,7 +972,7 @@ export function StoryViewer({
           exit={{ opacity: 0 }}
         >
           <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-3">
-            {dragX < -30 ? (
+            {dragX.get() < -30 ? (
               <>
                 <span className="text-white/90 text-sm font-medium">
                   {nextGroupId ? '→ Next Model' : '→ End of Stories'}
