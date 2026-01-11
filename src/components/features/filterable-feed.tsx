@@ -31,25 +31,41 @@ export function FilterableFeed({ models, topTags, userCity, language, buttons }:
 
   return (
     <>
-      {/* Category Pills for Tag Filtering - Sticky with floating glass pills and iOS 26 glass border */}
+      {/* Category Pills for Tag Filtering - Horizontal Bar Style */}
       {!isFavorites && (
-        <div className="sticky top-[96px] z-40 -mx-2 px-2 py-2">
-          {/* iOS 26 Glass Border Container - Subtle glass with visible border like iOS 26 */}
+        <div 
+          className="sticky top-[96px] z-40 -mx-4 px-0"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            outline: 'none',
+          }}
+        >
+          {/* Horizontal Bar Container - 100% Invisible */}
           <div 
-            className="rounded-2xl backdrop-blur-[2px]"
+            className="w-full flex items-center"
             style={{
-              background: 'rgba(255, 255, 255, 0.005)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.03), inset 0 0.5px 0 rgba(255, 255, 255, 0.06)'
+              height: '56px',
+              background: 'transparent',
+              border: 'none',
+              boxShadow: 'none',
+              outline: 'none',
             }}
           >
             <CategoryPills
               tags={topTags}
               selectedTag={selectedTag}
               onSelectTag={setSelectedTag}
+              activeFeed={feed}
             />
           </div>
         </div>
+      )}
+
+      {/* Separator line between pills and model cards (smaller) */}
+      {!isFavorites && (
+        <div className="border-b border-white/5 w-[348px] mx-auto" style={{ marginTop: '6px' }} />
       )}
 
       {/* Show empty state or feed */}
@@ -58,12 +74,14 @@ export function FilterableFeed({ models, topTags, userCity, language, buttons }:
           No models found in this category
         </p>
       ) : (
-        <FeedManager
-          models={filteredModels}
-          userCity={userCity}
-          language={language}
-          buttons={buttons}
-        />
+        <div className="mt-4">
+          <FeedManager
+            models={filteredModels}
+            userCity={userCity}
+            language={language}
+            buttons={buttons}
+          />
+        </div>
       )}
     </>
   );

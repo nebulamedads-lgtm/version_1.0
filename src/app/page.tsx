@@ -169,7 +169,11 @@ export default async function Home({ searchParams }: HomeProps) {
       <div className="pt-24 max-w-7xl mx-auto">
         {/* 3. Home Stories Bar - Featured models with stories (visibility handled by client component) */}
         {validStoryModels.length > 0 && (
-          <HomeStoriesBar models={validStoryModels} />
+          <>
+            <HomeStoriesBar models={validStoryModels} />
+            {/* Separator line between stories and pills - 376px width */}
+            <div className="border-b border-white/10 w-[376px] mx-auto" />
+          </>
         )}
 
         <div className="px-4">

@@ -437,3 +437,33 @@
 - **FixedHeader:** Favorites feed icon changed from Heart to Star
 - **Model Profile Page:** Added "New" badge with online dot combination
 - **StoryViewer:** Updated to use custom verified badge SVG
+
+## [2026-01-10] - Phase 5.5: Category Pills iOS 26 Redesign & Separator Lines
+**Status:** Complete
+
+### Category Pills Container Redesign:
+- **Horizontal Bar Style:**
+  - Converted from rounded container to full-width horizontal bar
+  - Container height set to 56px with invisible background (100% transparent)
+  - All container divs made 100% invisible (no background, border, or shadow)
+  - Pills positioned with 8px left padding offset
+- **iOS 26 Glass Effect:**
+  - Active pills use subtle glass effect (`bg-[#7A27FF]/30` or `bg-[#00FF85]/30`) instead of solid colors
+  - Inactive pills have floating glass effect with `border-white/20`
+  - Removed shadows from inactive pills to eliminate background interference
+  - All pills maintain backdrop-blur-xl for glassmorphism
+- **Vertical Alignment:**
+  - Pills vertically centered in 56px container with 2px bottom offset
+  - Padding: 18px top, 14px bottom for perfect alignment
+
+### Separator Lines Implementation:
+- **Header Separator:** Added `border-b border-white/10` to FixedHeader
+- **Stories-Pills Separator:** 376px wide line between HomeStoriesBar and CategoryPills
+- **Pills-Cards Separator:** 348px wide line (smaller opacity `border-white/5`) between pills and model cards
+- **Model Cards Spacing:** Added 16px top margin to FeedManager wrapper
+
+### Technical Details:
+- **FilterableFeed:** Full-width invisible container with 56px height
+- **CategoryPills:** Simplified structure, removed unnecessary wrappers
+- **Horizontal Scrolling:** Maintained with `overflow-x-auto scrollbar-hide`
+- **Feed State Colors:** Dynamic active pill colors (Emerald for 'near', Violet for 'new')

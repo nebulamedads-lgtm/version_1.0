@@ -33,7 +33,7 @@ export function FixedHeader({ userCity, nav, header }: FixedHeaderProps) {
   const isYou = userCity.toLowerCase() === 'you' || userCity === 'Unknown';
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex flex-col bg-background/60 backdrop-blur-2xl shadow-lg shadow-black/10">
+    <div className="fixed top-0 left-0 right-0 z-50 flex flex-col bg-background/60 backdrop-blur-2xl shadow-lg shadow-black/10 border-b border-white/10">
       {/* Top Row: Brand Name */}
       <div className="flex items-center justify-between px-4 py-3">
         <h1 className="text-xl font-bold tracking-tighter text-foreground">
