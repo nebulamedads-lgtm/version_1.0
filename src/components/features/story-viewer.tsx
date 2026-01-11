@@ -295,16 +295,9 @@ export function StoryViewer({
     };
   }, []);
 
-  // Remove blur during navigation transitions for faster browsing
-  useEffect(() => {
-    if (isTransitioning) {
-      // Remove blur during transition
-      document.body.classList.remove('story-open');
-    } else {
-      // Restore blur when transition completes
-      document.body.classList.add('story-open');
-    }
-  }, [isTransitioning]);
+  // Keep blur during navigation transitions to prevent flash
+  // The transition overlay will handle covering the content
+  // We keep the blur to ensure no flash of the main layout
 
   // Reset state when group changes
   useEffect(() => {
@@ -781,15 +774,15 @@ export function StoryViewer({
           </motion.div>
         </AnimatePresence>
         
-        {/* Transition Overlay - Prevents flash by keeping solid black during transition */}
+        {/* Transition Overlay - Prevents flash by fully covering during transition */}
         <AnimatePresence>
           {isTransitioning && (
             <motion.div
-              className="absolute inset-0 bg-[#050A14] z-[101] pointer-events-none"
+              className="absolute inset-0 bg-[#050A14] z-[110] pointer-events-none"
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.3 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.1 }}
             />
           )}
         </AnimatePresence>
