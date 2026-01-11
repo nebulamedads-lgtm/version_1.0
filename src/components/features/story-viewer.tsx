@@ -544,8 +544,8 @@ export function StoryViewer({
           ref={containerRef}
           data-story-viewer="true"
           // Fix pull-to-refresh: touch-none prevents browser gestures, overscroll-y-none prevents overscroll
-          // select-none prevents text selection, cursor-pointer for tap feedback
-          className="fixed inset-0 z-[100] touch-none overscroll-y-none select-none"
+          // select-none prevents text selection
+          className="fixed inset-0 z-[100] overscroll-y-none select-none"
           // Block context menu and apply iOS-specific styles
           onContextMenu={handleContextMenu}
           initial={{ opacity: 0 }}
@@ -556,6 +556,9 @@ export function StoryViewer({
             WebkitTouchCallout: 'none',
             // Prevent any user selection
             WebkitUserSelect: 'none',
+            // Allow pointer events to pass through to children
+            pointerEvents: 'auto',
+            touchAction: 'none', // Prevent browser gestures but allow our handlers
           }}
         >
       {/* Dark overlay - the page content behind is already blurred via CSS */}
