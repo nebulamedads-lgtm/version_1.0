@@ -720,34 +720,30 @@ export function StoryViewer({
             initial={slideDirection ? "enter" : false}
             animate="center"
             exit="exit"
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center cursor-pointer"
             style={{ pointerEvents: 'auto' }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              handleMouseDown();
+              if (!isDesktop) handleSwipeStart(e);
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation();
+              handleMouseUp();
+              if (!isDesktop) handleSwipeEnd(e);
+            }}
+            onPointerLeave={(e) => {
+              e.stopPropagation();
+              handleMouseUp();
+              if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTap(e);
+            }}
           >
-            {/* Inner tap handler container */}
-            <div
-              className="relative w-full h-full flex items-center justify-center cursor-pointer"
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                handleMouseDown();
-                if (!isDesktop) handleSwipeStart(e);
-              }}
-              onPointerUp={(e) => {
-                e.stopPropagation();
-                handleMouseUp();
-                if (!isDesktop) handleSwipeEnd(e);
-              }}
-              onPointerLeave={(e) => {
-                e.stopPropagation();
-                handleMouseUp();
-                if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleTap(e);
-              }}
-            >
-              {/* Story content wrapper */}
-              <div className="relative w-full h-full">
+            {/* Story content wrapper */}
+            <div className="relative w-full h-full">
                 {currentStory?.media_type === "video" ? (
                   (() => {
                     const mp4Url = getImageUrl(currentStory.media_url);
