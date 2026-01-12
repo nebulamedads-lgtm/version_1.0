@@ -792,22 +792,22 @@ export function StoryViewer({
               className="relative w-full h-full"
               onPointerDown={(e) => {
                 e.stopPropagation();
-                handleMouseDown();
+                if (!disableLongPress) handleMouseDown();
                 if (!isDesktop) handleSwipeStart(e);
               }}
               onPointerUp={(e) => {
                 e.stopPropagation();
-                handleMouseUp();
+                if (!disableLongPress) handleMouseUp();
                 if (!isDesktop) handleSwipeEnd(e);
               }}
               onPointerLeave={(e) => {
                 e.stopPropagation();
-                handleMouseUp();
+                if (!disableLongPress) handleMouseUp();
                 if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
               }}
               onPointerCancel={(e) => {
                 e.stopPropagation();
-                handleMouseUp();
+                if (!disableLongPress) handleMouseUp();
               }}
               onClick={(e) => {
                 e.stopPropagation();
@@ -815,15 +815,15 @@ export function StoryViewer({
               }}
               onTouchStart={(e) => {
                 e.stopPropagation();
-                handleMouseDown();
+                if (!disableLongPress) handleMouseDown();
               }}
               onTouchEnd={(e) => {
                 e.stopPropagation();
-                handleMouseUp();
+                if (!disableLongPress) handleMouseUp();
               }}
               onTouchCancel={(e) => {
                 e.stopPropagation();
-                handleMouseUp();
+                if (!disableLongPress) handleMouseUp();
               }}
             >
                 {currentStory?.media_type === "video" ? (
