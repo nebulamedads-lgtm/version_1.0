@@ -593,3 +593,18 @@
   - Softened gradient vignette for better content preview
   - Enhanced text shadows for readability against lighter background
   - Users can now see model's shape and colors through the blur (enticing teaser effect)
+
+## [2026-01-11] - Phase 5.9: Story Progress Bar Visibility Fix
+**Status:** Complete
+
+### Progress Bar Visibility Logic:
+- **Main Layout:** Progress bars always visible, even for single-story blocks
+  - Rationale: Provides visual feedback and consistency in main feed
+  - Condition: `!disableLongPress` (main layout context)
+- **Model Profile:** Progress bars hidden for single-story blocks, visible for multiple stories
+  - Rationale: Reduces UI clutter when only one story exists
+  - Condition: `disableLongPress && stories.length > 1` (model profile with multiple stories)
+- **Implementation:**
+  - Updated condition: `{(!disableLongPress || stories.length > 1) && (...)}`
+  - Ensures main layout always shows progress bars regardless of story count
+  - Model profile only shows progress bars when multiple stories exist

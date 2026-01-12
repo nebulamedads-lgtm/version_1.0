@@ -302,6 +302,12 @@ This roadmap is adapted for an AI-assisted **20-hour sprint**:
 - [x] **HomeStoriesBar:** Removed background bar for fully transparent stories container
 - [x] **Horizontal Extension:** Extended container slightly beyond content area to make borders visible
 
+* **[x] Phase 5.9: Story Progress Bar Visibility Fix**
+- [x] **Main Layout:** Progress bars always visible, even for single-story blocks (provides visual feedback and consistency)
+- [x] **Model Profile:** Progress bars hidden for single-story blocks, visible only when multiple stories exist (reduces UI clutter)
+- [x] **Implementation:** Conditional rendering based on `disableLongPress` prop and story count
+- [x] **Condition:** `(!disableLongPress || stories.length > 1)` ensures main layout always shows bars, model profile shows only for multiple stories
+
 ---
 
 ## 5. Exclusions (Not in V1)

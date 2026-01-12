@@ -122,6 +122,10 @@ Do not use `useRouter().push` for external links.
     - **Story transitions:** `animate-in fade-in zoom-in-95 duration-300`
     - **Model transitions:** `animate-in slide-in-from-right-full duration-500 ease-out`
 - **Navigation Isolation:** Pinned and Feed story groups MUST have separate neighbor calculations. Swiping on a pinned story navigates only to other pinned stories.
+- **Progress Bar Visibility:**
+  - **Main Layout** (`!disableLongPress`): Progress bars ALWAYS visible, even for single-story blocks
+  - **Model Profile** (`disableLongPress`): Progress bars hidden for single-story blocks, visible only when `stories.length > 1`
+  - **Condition:** `{(!disableLongPress || stories.length > 1) && (...)}`
 - **Blur Effect Architecture (React Portal):**
   - StoryViewer MUST render via `createPortal` to `#story-portal` (defined in `layout.tsx`)
   - Layout structure: `#main-content` (gets blurred) + `#story-portal` (StoryViewer, outside blur scope)
