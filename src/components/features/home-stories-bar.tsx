@@ -96,7 +96,11 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
       };
 
       // Check if this story group has been viewed (Visual Memory)
-      const viewed = isViewed(recentGroup.id);
+      // Get latest story ID to detect new stories
+      const latestStoryId = recentGroup.stories && recentGroup.stories.length > 0
+        ? recentGroup.stories[recentGroup.stories.length - 1]?.id
+        : undefined;
+      const viewed = isViewed(recentGroup.id, latestStoryId);
 
       return { model, recentGroup, displayGroup, latestStoryDate, viewed };
     })

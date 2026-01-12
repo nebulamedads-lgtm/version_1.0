@@ -4,13 +4,19 @@ import { useState, useEffect, useCallback } from "react";
 
 const STORAGE_KEY = "transpot-viewed-stories";
 
+interface ViewedStory {
+  groupId: string;
+  latestStoryId: string; // Track the latest story ID when viewed
+}
+
 /**
  * Custom hook to track "Viewed" story groups using localStorage.
  * Handles Next.js hydration mismatch by loading from localStorage only on client mount.
+ * Tracks latest story ID to detect when new stories are added.
  */
 export function useViewedStories() {
   // Start with empty array to avoid hydration mismatch
-  const [viewedIds, setViewedIds] = useState<string[]>([]);
+  const [viewedStories, setViewedStories] = useState<ViewedStory[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load from localStorage only after client mount (hydration safety)
@@ -20,8 +26,21 @@ export function useViewedStories() {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
+          // Handle migration from old format (string[]) to new format (ViewedStory[])
           if (Array.isArray(parsed)) {
-            setViewedIds(parsed);
+            if (parsed.length > 0 && typeof parsed[0] === 'string') {
+              // Old format: migrate to new format
+              const migrated: ViewedStory[] = parsed.map((id: string) => ({
+                groupId: id,
+                latestStoryId: '', // Can't recover old story IDs, so mark as empty
+              }));
+              setViewedStories(migrated);
+              // Save migrated format
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+            } else {
+              // New format
+              setViewedStories(parsed);
+            }
           }
         }
       } catch (error) {
@@ -39,7 +58,7 @@ export function useViewedStories() {
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed)) {
-            setViewedIds(parsed);
+            setViewedStories(parsed);
           }
         } catch (error) {
           console.warn("Failed to parse storage event:", error);
@@ -49,9 +68,9 @@ export function useViewedStories() {
 
     // Listen for custom event (same-window sync)
     const handleCustomUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<{ viewedIds: string[] }>;
-      if (customEvent.detail?.viewedIds) {
-        setViewedIds(customEvent.detail.viewedIds);
+      const customEvent = e as CustomEvent<{ viewedStories: ViewedStory[] }>;
+      if (customEvent.detail?.viewedStories) {
+        setViewedStories(customEvent.detail.viewedStories);
       }
     };
 
@@ -64,46 +83,67 @@ export function useViewedStories() {
     };
   }, []);
 
-  // Persist to localStorage whenever viewedIds changes (after hydration)
+  // Persist to localStorage whenever viewedStories changes (after hydration)
   useEffect(() => {
     if (!isHydrated) return;
     
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewedIds));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewedStories));
       // Dispatch custom event for same-window sync (storage event only works cross-tab)
       window.dispatchEvent(new CustomEvent("viewedStoriesUpdated", { 
-        detail: { viewedIds } 
+        detail: { viewedStories } 
       }));
     } catch (error) {
       // localStorage full or unavailable - fail silently
       console.warn("Failed to save viewed stories to localStorage:", error);
     }
-  }, [viewedIds, isHydrated]);
+  }, [viewedStories, isHydrated]);
 
   /**
-   * Mark a story group as viewed. Only adds if not already present.
+   * Mark a story group as viewed. Stores the latest story ID to detect new stories.
    */
-  const markAsViewed = useCallback((id: string) => {
-    setViewedIds((prev) => {
-      if (prev.includes(id)) {
-        return prev; // Already viewed, no change
+  const markAsViewed = useCallback((groupId: string, latestStoryId?: string) => {
+    setViewedStories((prev) => {
+      // Find existing entry
+      const existingIndex = prev.findIndex((v) => v.groupId === groupId);
+      
+      if (existingIndex >= 0) {
+        // Update existing entry with new latest story ID
+        const updated = [...prev];
+        updated[existingIndex] = {
+          groupId,
+          latestStoryId: latestStoryId || updated[existingIndex].latestStoryId,
+        };
+        return updated;
+      } else {
+        // Add new entry
+        return [...prev, { groupId, latestStoryId: latestStoryId || '' }];
       }
-      return [...prev, id];
     });
   }, []);
 
   /**
    * Check if a story group has been viewed.
+   * Returns false if new stories have been added (latest story ID changed).
    */
   const isViewed = useCallback(
-    (id: string): boolean => {
-      return viewedIds.includes(id);
+    (groupId: string, currentLatestStoryId?: string): boolean => {
+      const viewed = viewedStories.find((v) => v.groupId === groupId);
+      if (!viewed) return false;
+      
+      // If no current latest story ID provided, use old behavior (backward compatible)
+      if (!currentLatestStoryId) {
+        return true; // Assume viewed if we have an entry
+      }
+      
+      // If latest story ID changed, it means new stories were added - mark as unviewed
+      return viewed.latestStoryId === currentLatestStoryId;
     },
-    [viewedIds]
+    [viewedStories]
   );
 
   return {
-    viewedIds,
+    viewedIds: viewedStories.map((v) => v.groupId), // Backward compatibility
     markAsViewed,
     isViewed,
     isHydrated, // Expose hydration state for conditional rendering if needed

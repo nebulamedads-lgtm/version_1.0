@@ -14,11 +14,17 @@ export function StoryCircle({ group, onClick }: StoryCircleProps) {
   const { isViewed, markAsViewed } = useViewedStories();
   const coverUrl = getImageUrl(group.cover_url);
   const displayTitle = group.title || "Recent";
-  const viewed = isViewed(group.id);
+  
+  // Get the latest story ID to detect new stories
+  const latestStoryId = group.stories && group.stories.length > 0
+    ? group.stories[group.stories.length - 1]?.id
+    : undefined;
+  
+  const viewed = isViewed(group.id, latestStoryId);
 
-  // Handle click: mark as viewed and trigger parent onClick
+  // Handle click: mark as viewed with latest story ID and trigger parent onClick
   const handleClick = () => {
-    markAsViewed(group.id);
+    markAsViewed(group.id, latestStoryId);
     onClick();
   };
 
