@@ -221,6 +221,9 @@ export function StoryViewer({
     if (currentStoryIndex < stories.length - 1) {
       setAnimationType('story');
       setIsAnimating(false);
+      // Reset progress immediately when going forward
+      setProgress(0);
+      setPausedProgress(0);
       setCurrentStoryIndex((prev) => prev + 1);
       return true;
     }
@@ -231,6 +234,9 @@ export function StoryViewer({
     if (currentStoryIndex > 0) {
       setAnimationType('story');
       setIsAnimating(false);
+      // Reset progress immediately when going back
+      setProgress(0);
+      setPausedProgress(0);
       setCurrentStoryIndex((prev) => prev - 1);
       return true;
     }
