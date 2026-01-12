@@ -734,21 +734,30 @@ export function StoryViewer({
             className="absolute inset-0 flex items-center justify-center cursor-pointer"
             style={{ pointerEvents: 'auto' }}
             onPointerDown={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               handleMouseDown();
               if (!isDesktop) handleSwipeStart(e);
             }}
             onPointerUp={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               handleMouseUp();
               if (!isDesktop) handleSwipeEnd(e);
             }}
             onPointerLeave={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               handleMouseUp();
               if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
             }}
+            onPointerCancel={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleMouseUp();
+            }}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               handleTap(e);
             }}
