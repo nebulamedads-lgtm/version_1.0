@@ -697,35 +697,38 @@ export function StoryViewer({
       />
 
       {/* Progress Bars - JavaScript-based progress tracking */}
-      {/* TEMPORARY FIX: Hide progress bars for pinned stories in model profile */}
-      {!(disableLongPress && group.is_pinned) && (
       <div 
         key={`progress-${group.id}`}
         className={`absolute top-0 left-0 right-0 z-[102] flex gap-1 p-2 safe-area-top transition-opacity duration-200 ${
           isUIHidden ? 'opacity-0' : 'opacity-100'
         }`}
       >
-        {stories.map((story, index) => (
-          <div
-            key={story.id}
-            className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden"
-          >
+        {stories.map((story, index) => {
+          // TEMPORARY FIX: For pinned stories in model profile, show static bars (no animation)
+          const isStatic = disableLongPress && group.is_pinned;
+          const barWidth = index < currentStoryIndex 
+            ? '100%' 
+            : index === currentStoryIndex 
+              ? isStatic ? '100%' : `${progress}%` // Static 100% for pinned, animated for others
+              : '0%';
+          
+          return (
             <div
-              className="h-full bg-white rounded-full"
-              style={{
-                width: index < currentStoryIndex 
-                  ? '100%' 
-                  : index === currentStoryIndex 
-                    ? `${progress}%`
-                    : '0%',
-                // Smooth micro-transitions for the progress bar
-                transition: 'width 0.05s linear',
-              }}
-            />
-          </div>
-        ))}
+              key={story.id}
+              className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden"
+            >
+              <div
+                className="h-full bg-white rounded-full"
+                style={{
+                  width: barWidth,
+                  // Only animate if not static (pinned in model profile)
+                  transition: isStatic ? 'none' : 'width 0.05s linear',
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
-      )}
 
       {/* Header - Group info and close button */}
       {/* Key by group.id to prevent duplication during transitions */}
