@@ -378,8 +378,15 @@ export function StoryViewer({
   // Handle screen tap navigation (for stories within same group)
   // Only triggers if it's a tap (not a swipe)
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Clear any pending long press timer to prevent UI from hiding
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
     if (isLongPress) {
       setIsLongPress(false);
+      setIsUIHidden(false);
       return;
     }
 
