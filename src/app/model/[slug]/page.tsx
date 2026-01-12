@@ -223,65 +223,70 @@ export default async function ModelPage({ params }: PageProps) {
               </Link>
             </div>
           </div>
-          <div className="px-4 py-5 lg:p-0 lg:pt-4 lg:px-4 lg:flex lg:flex-col lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-hide">
-            <div className="space-y-6">
-              {/* Name, Verified Badge, New Badge with Online Dot */}
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold">{model.name}</h1>
-                {model.is_verified && (
-                  <img
-                    src="/verified-badge.svg"
-                    alt="Verified"
-                    className="w-6 h-6 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] flex-shrink-0"
-                    width={24}
-                    height={24}
-                  />
-                )}
-                {/* New Badge with Online Dot - Combined (same as ModelCard) */}
-                {model.is_new ? (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 pr-2 rounded-full text-xs font-semibold bg-[#7A27FF]/50 backdrop-blur-xl text-white border border-[#7A27FF]/50 shadow-[0_0_15px_rgba(122,39,255,0.4)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8),0_1px_2px_rgba(0,0,0,0.6)]">
-                    New
-                    <StatusIndicator />
-                  </span>
-                ) : (
-                  <StatusIndicator />
-                )}
-              </div>
-
-              {/* Tags - Mobile: Break out of parent padding for edge-to-edge scroll */}
-              <div className="overflow-x-auto scrollbar-hide -mx-4 lg:mx-0 w-[calc(100%+2rem)] lg:w-auto">
-                <div className="flex gap-2 lg:flex-wrap lg:px-0">
-                  {translatedTags.map((tag: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className={`flex-shrink-0 inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-[#7A27FF]/30 backdrop-blur-xl text-white border border-[#7A27FF]/40 shadow-[0_0_15px_rgba(122,39,255,0.3)] transition-all duration-300 hover:bg-[#7A27FF]/40 hover:border-[#7A27FF]/60 hover:shadow-[0_0_20px_rgba(122,39,255,0.5)] ${index === translatedTags.length - 1 ? "mr-4" : ""}`}
-                    >
-                      {tag}
+          <div className="px-4 py-5 lg:p-0 lg:px-4 lg:flex lg:flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+            {/* Scrollable content area - only vertical scrolling */}
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:overflow-x-hidden scrollbar-hide lg:pt-4 lg:pb-3">
+              <div className="space-y-6">
+                {/* Name, Verified Badge, New Badge with Online Dot - Sticky at top */}
+                <div className="flex flex-col gap-2 lg:sticky lg:top-0 lg:z-10 lg:bg-background lg:pt-0 lg:-mt-4 lg:pb-2">
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-3xl font-bold lg:text-[1.6875rem]">{model.name}</h1>
+                    {model.is_verified && (
+                      <img
+                        src="/verified-badge.svg"
+                        alt="Verified"
+                        className="w-6 h-6 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] flex-shrink-0"
+                        width={24}
+                        height={24}
+                      />
+                    )}
+                    {/* Online dot - Only for non-new profiles, inline with name */}
+                    {!model.is_new && <StatusIndicator />}
+                  </div>
+                  {/* New Badge with Online Dot - Below name, only for new profiles */}
+                  {model.is_new && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1 pr-2 rounded-full text-xs font-semibold bg-[#7A27FF]/50 backdrop-blur-xl text-white border border-[#7A27FF]/50 shadow-[0_0_15px_rgba(122,39,255,0.4)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8),0_1px_2px_rgba(0,0,0,0.6)] w-fit">
+                      New
+                      <StatusIndicator />
                     </span>
-                  ))}
+                  )}
                 </div>
-              </div>
 
-              {/* Stories - Mobile: Between Tags and Bio */}
-              <div className="lg:hidden">
-                <StoriesContainer 
-                  groups={filteredStoryGroups} 
-                  socialLink={socialLink}
-                  modelName={model.name}
-                  modelImage={model.image_url}
-                  modelSlug={slug}
-                  isVerified={model.is_verified}
-                />
-              </div>
+                {/* Tags - Mobile: Break out of parent padding for edge-to-edge scroll */}
+                <div className="overflow-x-auto scrollbar-hide -mx-4 lg:mx-0 w-[calc(100%+2rem)] lg:w-auto">
+                  <div className="flex gap-2 lg:flex-wrap lg:px-0 pl-2">
+                    {translatedTags.map((tag: string, index: number) => (
+                      <span 
+                        key={index} 
+                        className={`flex-shrink-0 inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-[#7A27FF]/30 backdrop-blur-xl text-white border border-[#7A27FF]/40 transition-all duration-300 hover:bg-[#7A27FF]/40 hover:border-[#7A27FF]/60 ${index === translatedTags.length - 1 ? "mr-4" : ""}`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Bio */}
-              <p className="text-muted-foreground">
-                {displayBio}
-              </p>
+                {/* Stories - Mobile: Between Tags and Bio */}
+                <div className="lg:hidden">
+                  <StoriesContainer 
+                    groups={filteredStoryGroups} 
+                    socialLink={socialLink}
+                    modelName={model.name}
+                    modelImage={model.image_url}
+                    modelSlug={slug}
+                    isVerified={model.is_verified}
+                  />
+                </div>
+
+                {/* Bio */}
+                <p className="text-muted-foreground">
+                  {displayBio}
+                </p>
+              </div>
             </div>
 
-            {/* Chat Button - Desktop: Fixed at bottom of info pane */}
-            <div className="hidden lg:block lg:mt-auto lg:pt-3 lg:pb-3">
+            {/* Chat Button - Desktop: Sticky at bottom of info pane */}
+            <div className="hidden lg:block lg:flex-shrink-0 lg:sticky lg:bottom-0 lg:z-10 lg:bg-background lg:pt-2 lg:pb-3">
               <ChatButton 
                 href={socialLink}
                 modelId={model.id} 
@@ -295,19 +300,23 @@ export default async function ModelPage({ params }: PageProps) {
 
         {/* Stories Block - Desktop Only (Right Column) */}
         {/* Mobile stories are now inside Profile Info section, between Tags and Bio */}
-        <div className="hidden lg:block lg:order-3 lg:col-span-3 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-y-auto scrollbar-hide lg:px-0">
-          <StoriesContainer 
-            groups={filteredStoryGroups} 
-            socialLink={socialLink}
-            modelName={model.name}
-            modelImage={model.image_url}
-            modelSlug={slug}
-            isVerified={model.is_verified}
-          />
+        <div className="hidden lg:block lg:order-3 lg:col-span-3 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-hidden lg:flex lg:flex-col lg:pt-3 lg:pb-3">
+          <div className="lg:flex-1 lg:min-h-0 lg:overflow-hidden lg:flex lg:flex-col bg-background/30 backdrop-blur-xl rounded-2xl border border-white/10">
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-hide lg:p-4 [&>div]:!mt-0 [&>div]:!border-0 [&>div]:!rounded-none [&>div]:!bg-transparent [&>div]:!backdrop-blur-none">
+              <StoriesContainer 
+                groups={filteredStoryGroups} 
+                socialLink={socialLink}
+                modelName={model.name}
+                modelImage={model.image_url}
+                modelSlug={slug}
+                isVerified={model.is_verified}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Gallery Block - order-1 on Mobile (TOP), order-2 (Center) on Desktop */}
-        <div className="order-1 lg:order-2 lg:col-span-6 lg:h-screen lg:overflow-y-auto scrollbar-hide">
+        <div className="order-1 lg:order-2 lg:col-span-6 lg:h-screen lg:overflow-y-auto scrollbar-hide lg:pt-4">
           <ProfileGallery 
             items={galleryItems} 
             name={model.name}

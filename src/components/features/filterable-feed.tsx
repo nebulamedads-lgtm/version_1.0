@@ -63,9 +63,9 @@ export function FilterableFeed({ models, topTags, userCity, language, buttons }:
         </div>
       )}
 
-      {/* Separator line between pills and model cards (smaller) */}
+      {/* Separator line between pills and model cards (smaller) - 348px width on mobile, full width on desktop */}
       {!isFavorites && (
-        <div className="border-b border-white/5 w-[348px] mx-auto" style={{ marginTop: '6px' }} />
+        <div className="border-b border-white/5 w-[348px] lg:w-full mx-auto" style={{ marginTop: '6px' }} />
       )}
 
       {/* Show empty state or feed */}

@@ -51,9 +51,10 @@ export function ModelCard({ name, image, tags, slug, priority, isOnline, is_veri
         "relative overflow-hidden p-0 cursor-pointer",
         "transition-all duration-300 ease-out",
         "hover:scale-[1.02] active:scale-[0.98]",
-        // Gold Spark border-top on hover (Rich Gold #D4AF37)
-        "border-t-2 border-t-transparent",
-        "group-hover:border-t-[oklch(78%_0.13_85)]"
+        // Subtle emerald glow surrounding the card on hover (Electric Emerald #00FF85)
+        "border border-transparent",
+        "group-hover:border-[#00FF85]/30",
+        "group-hover:shadow-[0_0_20px_rgba(0,255,133,0.15),0_0_40px_rgba(0,255,133,0.08)]"
       )}>
         <div className="relative aspect-[3/4]">
           {/* Profile Image: Visual Memory + Monochrome-First aesthetic */}

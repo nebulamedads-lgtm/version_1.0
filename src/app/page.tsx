@@ -171,8 +171,8 @@ export default async function Home({ searchParams }: HomeProps) {
         {validStoryModels.length > 0 && (
           <>
             <HomeStoriesBar models={validStoryModels} />
-            {/* Separator line between stories and pills - 376px width */}
-            <div className="border-b border-white/10 w-[376px] mx-auto" />
+            {/* Separator line between stories and pills - 376px width on mobile, full width on desktop */}
+            <div className="border-b border-white/10 w-[376px] lg:w-full mx-auto" />
           </>
         )}
 

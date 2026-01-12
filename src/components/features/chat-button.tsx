@@ -33,8 +33,14 @@ export function ChatButton({ href, modelId, modelName, variant = 'fixed', label 
     active:scale-[0.98] active:bg-white/20
     transition-all duration-300 ease-out
     flex items-center justify-center
+    whitespace-nowrap
     px-6
   `.trim().replace(/\s+/g, ' ');
+
+  // Desktop inline variant: minimal padding, full width, extended 10% horizontally, reduced font size, no neon effect
+  const inlineButtonClasses = variant === 'inline' 
+    ? `${buttonClasses} lg:px-3 lg:w-full lg:scale-x-[1.1] lg:origin-center lg:text-sm lg:h-[47.6px] lg:shadow-none lg:hover:shadow-none`
+    : buttonClasses;
 
   if (variant === 'inline') {
     return (
@@ -44,10 +50,10 @@ export function ChatButton({ href, modelId, modelName, variant = 'fixed', label 
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleClick}
-        className={buttonClasses}
+        className={inlineButtonClasses}
       >
-        <MessageCircle className="w-5 h-5 mr-3 text-[#00FF85]" />
-        {buttonText}
+        <MessageCircle className="w-5 h-5 mr-3 text-[#00FF85] flex-shrink-0" />
+        <span className="truncate">{buttonText}</span>
       </a>
     );
   }

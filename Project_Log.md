@@ -553,3 +553,43 @@
   - All navigation handlers now clear timers and reset UI state immediately
   - Progress state properly preserved during pause/resume cycles
   - Consistent behavior across desktop and mobile platforms
+
+## [2026-01-11] - Phase 5.8: Desktop Model Profile Layout Optimization
+**Status:** Complete
+
+### Desktop Layout Refinements:
+- **Fixed Container Architecture:**
+  - Model info panel: Fixed height container with internal vertical scrolling only
+  - Stories block: Fixed height container with internal scrolling, bottom border always visible
+  - Gallery block: Fixed height with vertical scrolling
+  - Prevents page-level scrolling, all scrolling contained within panels
+- **Sticky Elements:**
+  - Model name, verified badge, and online dot: Sticky at top of scrollable content
+  - Chat button: Sticky at bottom of model info panel
+  - Both elements remain visible during scrolling
+- **Visual Improvements:**
+  - Reduced model name font size by 10% on desktop (`lg:text-[1.6875rem]`)
+  - Category pills: Moved 8px to the right, removed neon glow effect
+  - Separator lines: Extended to full width on desktop (stories-pills and pills-cards)
+  - Stories block: Centered "STORIES" heading text
+  - Model name layout: "New" tag appears below name; online dot inline for non-new profiles
+- **Chat Button Desktop Optimization:**
+  - Extended horizontally by 10% (`lg:scale-x-[1.1]`)
+  - Reduced font size by 30% on desktop (`lg:text-sm`)
+  - Reduced vertical height by 15% on desktop (`lg:h-[47.6px]`)
+  - Removed neon glow effect on desktop (kept for mobile)
+  - Minimal horizontal padding (`lg:px-3`) for larger button
+  - Text always displays on one line (`whitespace-nowrap`)
+- **Header Logo Centering:**
+  - Desktop: Logo centered in header
+  - Mobile: Logo remains left-aligned (unchanged)
+- **ModelCard Hover Effect:**
+  - Replaced golden top border with subtle emerald glow surrounding entire card
+  - Emerald border (`border-[#00FF85]/30`) with layered shadow glow
+  - Creates premium hover feedback without distracting golden line
+- **Locked VIP Teaser Blur Reduction:**
+  - Reduced backdrop blur from `backdrop-blur-xl` (24px) to `backdrop-blur-md` (12px)
+  - Reduced background opacity from 70% to 40%
+  - Softened gradient vignette for better content preview
+  - Enhanced text shadows for readability against lighter background
+  - Users can now see model's shape and colors through the blur (enticing teaser effect)
