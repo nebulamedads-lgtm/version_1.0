@@ -604,7 +604,9 @@ export function StoryViewer({
       />
 
       {/* Progress Bars - JavaScript-based progress tracking */}
+      {/* Key by group.id to prevent duplication during transitions */}
       <div 
+        key={`progress-${group.id}`}
         className={`absolute top-0 left-0 right-0 z-[102] flex gap-1 p-2 safe-area-top transition-opacity duration-200 ${
           isUIHidden ? 'opacity-0' : 'opacity-100'
         }`}
