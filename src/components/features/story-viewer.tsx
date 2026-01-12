@@ -254,6 +254,10 @@ export function StoryViewer({
   useEffect(() => {
     if (!currentStory) return;
 
+    // Reset progress immediately when story index changes
+    setProgress(0);
+    setPausedProgress(0);
+
     // If paused, don't start or continue the interval
     if (isPaused) {
       return;
