@@ -129,14 +129,25 @@ export default async function ModelPage({ params }: PageProps) {
         };
       }
 
-      // Recent groups (unpinned): Filter out stories older than 7 days
+      // Recent groups (unpinned): TEMPORARY FIX - Only show the newest story in model profile
+      // Filter out stories older than 7 days first
       const filteredStories = (group.stories || []).filter((story) => {
         const storyDate = new Date(story.created_at);
         return storyDate >= sevenDaysAgo;
       });
 
-      // Sort stories chronologically (oldest first) so they play in order
-      const sortedStories = [...filteredStories].sort((a, b) => {
+      // Sort by date (newest first) to get the most recent story
+      const sortedByNewest = [...filteredStories].sort((a, b) => {
+        const dateA = new Date(a.posted_date || a.created_at);
+        const dateB = new Date(b.posted_date || b.created_at);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      // TEMPORARY FIX: Only keep the newest story (first one after sorting)
+      const newestStoryOnly = sortedByNewest.length > 0 ? [sortedByNewest[0]] : [];
+      
+      // Sort chronologically (oldest first) for playback - but now only one story
+      const sortedStories = [...newestStoryOnly].sort((a, b) => {
         const dateA = new Date(a.posted_date || a.created_at);
         const dateB = new Date(b.posted_date || b.created_at);
         return dateA.getTime() - dateB.getTime();

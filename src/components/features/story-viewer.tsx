@@ -709,9 +709,16 @@ export function StoryViewer({
           // TEMPORARY FIX: For pinned stories in model profile, show static bars (no animation)
           // Only the current story bar is filled, previous bars are empty for clarity
           const isStatic = disableLongPress && group.is_pinned;
-          const barWidth = index === currentStoryIndex
-            ? isStatic ? '100%' : `${progress}%` // Current story: 100% for pinned (static), animated for others
-            : '0%'; // All other stories (previous and upcoming): 0% filled
+          
+          // Main layout: Show completed stories as 100% filled (subtle mask effect)
+          // Model profile pinned: Only current story filled, others empty
+          const barWidth = isStatic
+            ? (index === currentStoryIndex ? '100%' : '0%') // Pinned in model profile: only current filled
+            : (index < currentStoryIndex 
+                ? '100%' 
+                : index === currentStoryIndex 
+                  ? `${progress}%` 
+                  : '0%'); // Main layout: completed stories stay filled
           
           return (
             <div
