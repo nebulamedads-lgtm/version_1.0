@@ -110,7 +110,9 @@ export function StoryViewer({
     return dateA.getTime() - dateB.getTime(); // Ascending: oldest first, newest last
   });
   const currentStory = stories[currentStoryIndex];
-  const duration = currentStory?.duration || 5;
+  // Double duration in model profile (since pause is disabled)
+  const baseDuration = currentStory?.duration || 5;
+  const duration = disableLongPress ? baseDuration * 2 : baseDuration;
 
   // Framer Motion variants for model-to-model transitions
   // Direction: 'left' = going to NEXT model, 'right' = going to PREVIOUS model
@@ -492,10 +494,26 @@ export function StoryViewer({
   const handleShare = async () => {
     const storyUrl = getCurrentStoryUrl();
     
-    // Only pause if long press is enabled (main layout)
-    if (!disableLongPress) {
-      pauseStory();
+    // In model profile: copy to clipboard and show toast
+    if (disableLongPress) {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(storyUrl);
+          setShowCopiedToast(true);
+          // Hide toast after 2 seconds
+          setTimeout(() => {
+            setShowCopiedToast(false);
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Clipboard error:', error);
+      }
+      return;
     }
+    
+    // Main layout: use native share with pause/resume
+    // Only pause if long press is enabled (main layout)
+    pauseStory();
     
     try {
       await share({
@@ -506,12 +524,10 @@ export function StoryViewer({
       // Handle any errors silently
       console.error('Share error:', error);
     } finally {
-      // Only resume if long press is enabled (main layout)
-      if (!disableLongPress) {
-        setTimeout(() => {
-          resumeStory();
-        }, 100);
-      }
+      // Small delay to ensure share sheet is fully closed before resuming
+      setTimeout(() => {
+        resumeStory();
+      }, 100);
     }
   };
 
