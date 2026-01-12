@@ -697,6 +697,8 @@ export function StoryViewer({
       />
 
       {/* Progress Bars - JavaScript-based progress tracking */}
+      {/* Only show progress bars if there's more than one story */}
+      {stories.length > 1 && (
       <div 
         key={`progress-${group.id}`}
         className={`absolute top-0 left-0 right-0 z-[102] flex gap-1 p-2 safe-area-top transition-opacity duration-200 ${
@@ -728,6 +730,7 @@ export function StoryViewer({
           );
         })}
       </div>
+      )}
 
       {/* Header - Group info and close button */}
       {/* Key by group.id to prevent duplication during transitions */}
