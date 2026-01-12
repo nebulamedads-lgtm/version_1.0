@@ -85,6 +85,7 @@ export function StoryViewer({
   // Swipe detection state (no visual feedback, just detection)
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const hasSwiped = useRef(false); // Track if a swipe occurred to prevent tap
+  const touchStartTime = useRef<number>(0); // Track when touch started to detect quick taps
 
   // Desktop detection
   const [isDesktop, setIsDesktop] = useState(false);
@@ -469,6 +470,9 @@ export function StoryViewer({
     // Disable long press if disabled (model profile)
     if (disableLongPress) return;
     
+    // Record touch start time to detect quick taps
+    touchStartTime.current = Date.now();
+    
     longPressTimerRef.current = setTimeout(() => {
       pauseStory();
       setIsUIHidden(true);
@@ -480,11 +484,18 @@ export function StoryViewer({
     // Disable long press if disabled (model profile)
     if (disableLongPress) return;
     
+    // Clear long press timer immediately
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    if (isLongPress) {
+    
+    // If this was a quick tap (less than 150ms), ensure UI stays visible
+    const touchDuration = Date.now() - touchStartTime.current;
+    if (touchDuration < 150) {
+      setIsUIHidden(false);
+      setIsLongPress(false);
+    } else if (isLongPress) {
       setIsUIHidden(false);
       resumeStory();
       setIsLongPress(false);
