@@ -77,6 +77,7 @@ export function StoryViewer({
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextModelName, setNextModelName] = useState<string | null>(null); // For transition indicator
+  const [showCopiedToast, setShowCopiedToast] = useState(false); // For "Link Copied" toast in model profile
   
   // Animation state
   const [isClosing, setIsClosing] = useState(false);
@@ -899,11 +900,13 @@ export function StoryViewer({
       </div>
 
       {/* Micro-Toast - Link Copied Confirmation (Electric Emerald) */}
-      {isCopiedAndGo && (
+      {(isCopiedAndGo || showCopiedToast) && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] pointer-events-none animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-center gap-2 px-4 py-3 bg-black/70 backdrop-blur-xl border border-[#00FF85]/30 rounded-xl shadow-[0_0_20px_rgba(0,255,133,0.2)]">
             <Link2 className="w-5 h-5 text-[#00FF85]" />
-            <span className="text-white font-medium text-sm">Link Copied! Opening...</span>
+            <span className="text-white font-medium text-sm">
+              {isCopiedAndGo ? 'Link Copied! Opening...' : 'Link Copied!'}
+            </span>
           </div>
         </div>
       )}
