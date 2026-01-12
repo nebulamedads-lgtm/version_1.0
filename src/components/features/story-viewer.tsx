@@ -775,7 +775,44 @@ export function StoryViewer({
             }}
           >
             {/* Story content wrapper */}
-            <div className="relative w-full h-full">
+            <div 
+              className="relative w-full h-full"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handleMouseDown();
+                if (!isDesktop) handleSwipeStart(e);
+              }}
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                handleMouseUp();
+                if (!isDesktop) handleSwipeEnd(e);
+              }}
+              onPointerLeave={(e) => {
+                e.stopPropagation();
+                handleMouseUp();
+                if (!isDesktop && swipeStart.current) handleSwipeEnd(e);
+              }}
+              onPointerCancel={(e) => {
+                e.stopPropagation();
+                handleMouseUp();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTap(e);
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                handleMouseDown();
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                handleMouseUp();
+              }}
+              onTouchCancel={(e) => {
+                e.stopPropagation();
+                handleMouseUp();
+              }}
+            >
                 {currentStory?.media_type === "video" ? (
                   (() => {
                     const mp4Url = getImageUrl(currentStory.media_url);
