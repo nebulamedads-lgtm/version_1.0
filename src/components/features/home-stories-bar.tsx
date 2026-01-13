@@ -54,81 +54,15 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
     }
   }, [feed, storyId, storyIndexParam, setStoryId, setStoryIndexParam]);
 
-  // Only render on 'near' feed
-  if (feed !== "near") {
-    return null;
-  }
-
-  // Find the selected model and group based on URL param
-  // Format: storyId = "modelId:groupId" or just "groupId" if we can infer model
-  const selectedModel = storyId
-    ? models.find((model) => {
-        // Check if any of this model's story groups match the storyId
-        return model.story_groups?.some((group) => group.id === storyId);
-      })
-    : null;
-
-  const selectedGroup = storyId && selectedModel
-    ? selectedModel.story_groups?.find((group) => group.id === storyId)
-    : null;
-
-  // Handle circle click - open story viewer with recent group
-  // Calculate initial index and set both URL parameters
-  const handleRecentGroupClick = (groupId: string) => {
-    // Find the group to calculate starting index
-    const group = models
-      .flatMap((m) => m.story_groups || [])
-      .find((g) => g.id === groupId);
-    
-    if (group) {
-      // Sort stories chronologically (oldest first) to match StoryViewer
-      const sortedStories = [...(group.stories || [])].sort((a, b) => {
-        const dateA = new Date(a.posted_date || a.created_at);
-        const dateB = new Date(b.posted_date || b.created_at);
-        return dateA.getTime() - dateB.getTime();
-      });
-      const startIndex = getFirstUnseenStoryIndex(sortedStories);
-      
-      // Determine chain and snapshot group IDs at open time
-      const groupData = modelsWithRecentGroups.find(({ recentGroup }) => recentGroup.id === groupId);
-      if (groupData) {
-        const isUnseen = groupData.hasUnseen;
-        const chain = isUnseen ? unseenGroups : seenGroups;
-        // Snapshot the chain group IDs to prevent changes mid-navigation
-        const chainGroupIds = chain.map((g) => g.id);
-        setActiveChainGroupIds(chainGroupIds);
-        
-        // Calculate neighbors using the snapshot
-        const neighbors = getNeighborsForGroup(groupId, chainGroupIds);
-        setActiveChainNeighbors(neighbors);
-      } else {
-        setActiveChainGroupIds(null);
-        setActiveChainNeighbors({ prevGroupId: null, nextGroupId: null });
-      }
-      
-      // Set both parameters with replace to avoid history pollution
-      setStoryId(groupId, { history: "replace" });
-      setStoryIndexParam(startIndex.toString(), { history: "replace" });
-    } else {
-      // Fallback if group not found
-      setActiveChainNeighbors({ prevGroupId: null, nextGroupId: null });
-      setActiveChainGroupIds(null);
-      setStoryId(groupId, { history: "replace" });
-      setStoryIndexParam("0", { history: "replace" });
-    }
-  };
-
-  // Handle close viewer (removes URL params and clears chain neighbors)
-  const handleCloseViewer = () => {
-    setActiveChainNeighbors(null);
-    setActiveChainGroupIds(null);
-    setStoryId(null, { history: "replace" });
-    setStoryIndexParam(null, { history: "replace" });
-  };
-
   // Filter models with recent groups and extract the recent group
   // Use useMemo to optimize sorting and re-run when viewedStoryIds changes
+  // IMPORTANT: This hook must be called before any early returns to follow Rules of Hooks
   const modelsWithRecentGroups = useMemo(() => {
+    // Return empty array if not on 'near' feed to avoid unnecessary computation
+    if (feed !== "near") {
+      return [];
+    }
+    
     return models
       .map((model) => {
         // Find the specific recent (unpinned) group with stories
@@ -180,12 +114,7 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
         // Secondary sort: Newest first within same unseen status
         return b.latestStoryDate.getTime() - a.latestStoryDate.getTime();
       });
-  }, [models, hasUnseenStories]);
-
-  // Don't render if no models with recent groups
-  if (modelsWithRecentGroups.length === 0) {
-    return null;
-  }
+  }, [models, hasUnseenStories, feed]);
 
   // Split groups into seen/unseen chains for isolated navigation
   const unseenGroups = useMemo(() => {
@@ -265,10 +194,25 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
     };
   }, [modelsWithRecentGroups, unseenGroups, seenGroups]);
 
+  // Find the selected model and group based on URL param
+  // Format: storyId = "modelId:groupId" or just "groupId" if we can infer model
+  const selectedModel = storyId && feed === "near"
+    ? models.find((model) => {
+        // Check if any of this model's story groups match the storyId
+        return model.story_groups?.some((group) => group.id === storyId);
+      })
+    : null;
+
+  const selectedGroup = storyId && selectedModel && feed === "near"
+    ? selectedModel.story_groups?.find((group) => group.id === storyId)
+    : null;
+
   // Set chain neighbors when storyId changes (e.g., direct link)
   // NOTE: This only runs on initial open or direct link, NOT during navigation
   // Navigation updates neighbors directly in handleNavigate to preserve the snapshot
   useEffect(() => {
+    if (feed !== "near") return;
+    
     if (storyId && selectedGroup && !activeChainGroupIds) {
       // Only set neighbors if we don't already have a snapshot (initial open or direct link)
       // Determine chain from group's current status and snapshot it
@@ -290,7 +234,72 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
       setActiveChainNeighbors(null);
       setActiveChainGroupIds(null);
     }
-  }, [storyId, selectedGroup, getNeighborsForGroup, modelsWithRecentGroups, unseenGroups, seenGroups, activeChainGroupIds]);
+  }, [storyId, selectedGroup, getNeighborsForGroup, modelsWithRecentGroups, unseenGroups, seenGroups, activeChainGroupIds, feed]);
+
+  // Only render on 'near' feed - NOW after all hooks are called
+  if (feed !== "near") {
+    return null;
+  }
+
+  // Don't render if no models with recent groups
+  if (modelsWithRecentGroups.length === 0) {
+    return null;
+  }
+
+  // Handle circle click - open story viewer with recent group
+  // Calculate initial index and set both URL parameters
+  const handleRecentGroupClick = (groupId: string) => {
+    // Find the group to calculate starting index
+    const group = models
+      .flatMap((m) => m.story_groups || [])
+      .find((g) => g.id === groupId);
+    
+    if (group) {
+      // Sort stories chronologically (oldest first) to match StoryViewer
+      const sortedStories = [...(group.stories || [])].sort((a, b) => {
+        const dateA = new Date(a.posted_date || a.created_at);
+        const dateB = new Date(b.posted_date || b.created_at);
+        return dateA.getTime() - dateB.getTime();
+      });
+      const startIndex = getFirstUnseenStoryIndex(sortedStories);
+      
+      // Determine chain and snapshot group IDs at open time
+      const groupData = modelsWithRecentGroups.find(({ recentGroup }) => recentGroup.id === groupId);
+      if (groupData) {
+        const isUnseen = groupData.hasUnseen;
+        const chain = isUnseen ? unseenGroups : seenGroups;
+        // Snapshot the chain group IDs to prevent changes mid-navigation
+        const chainGroupIds = chain.map((g) => g.id);
+        setActiveChainGroupIds(chainGroupIds);
+        
+        // Calculate neighbors using the snapshot
+        const neighbors = getNeighborsForGroup(groupId, chainGroupIds);
+        setActiveChainNeighbors(neighbors);
+      } else {
+        setActiveChainGroupIds(null);
+        setActiveChainNeighbors({ prevGroupId: null, nextGroupId: null });
+      }
+      
+      // Set both parameters with replace to avoid history pollution
+      setStoryId(groupId, { history: "replace" });
+      setStoryIndexParam(startIndex.toString(), { history: "replace" });
+    } else {
+      // Fallback if group not found
+      setActiveChainNeighbors({ prevGroupId: null, nextGroupId: null });
+      setActiveChainGroupIds(null);
+      setStoryId(groupId, { history: "replace" });
+      setStoryIndexParam("0", { history: "replace" });
+    }
+  };
+
+  // Handle close viewer (removes URL params and clears chain neighbors)
+  const handleCloseViewer = () => {
+    setActiveChainNeighbors(null);
+    setActiveChainGroupIds(null);
+    setStoryId(null, { history: "replace" });
+    setStoryIndexParam(null, { history: "replace" });
+  };
+
 
   // Handler for navigating between models' stories
   // Use 'replace' history to avoid creating multiple back button entries
