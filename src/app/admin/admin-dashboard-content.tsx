@@ -119,7 +119,8 @@ export default function AdminDashboardContent() {
     file: File,
     filename: string,
     adminKey: string,
-    contentType?: string
+    contentType?: string,
+    bucket?: 'stories' | 'models'
   ): Promise<string> => {
     // Use explicit contentType if provided, otherwise fall back to file.type
     const mimeType = contentType || file.type || 'application/octet-stream';
@@ -131,6 +132,7 @@ export default function AdminDashboardContent() {
       body: JSON.stringify({
         filename,
         contentType: mimeType,
+        bucket, // Pass bucket parameter for gallery items
       }),
     });
 
@@ -315,6 +317,13 @@ export default function AdminDashboardContent() {
       let posterUrl: string | null = null;
       let mediaType: "image" | "video";
 
+      // Get model slug for gallery item paths
+      const selectedModelData = models.find(m => m.id === galleryModel);
+      if (!selectedModelData) {
+        throw new Error("Selected model not found");
+      }
+      const modelSlug = selectedModelData.slug;
+
       if (galleryMediaMode === "video") {
         // Video Mode: Upload all 3 files
         if (!galleryVideoMp4 || !galleryVideoWebm || !galleryPoster) {
@@ -325,11 +334,11 @@ export default function AdminDashboardContent() {
         const posterExt = galleryPoster.name.split('.').pop()?.toLowerCase() || 'webp';
         const posterMimeType = galleryPoster.type || `image/${posterExt === 'jpg' ? 'jpeg' : posterExt}`;
 
-        // Upload all 3 files in parallel
+        // Upload all 3 files in parallel - use model-slug path and models bucket
         const [mp4Key, , posterKey] = await Promise.all([
-          uploadFileToR2(galleryVideoMp4, `gallery/${timestamp}-${cleanName}.mp4`, adminKey, 'video/mp4'),
-          uploadFileToR2(galleryVideoWebm, `gallery/${timestamp}-${cleanName}.webm`, adminKey, 'video/webm'),
-          uploadFileToR2(galleryPoster, `gallery/${timestamp}-${cleanName}-poster.${posterExt}`, adminKey, posterMimeType),
+          uploadFileToR2(galleryVideoMp4, `${modelSlug}/${timestamp}-${cleanName}.mp4`, adminKey, 'video/mp4', 'models'),
+          uploadFileToR2(galleryVideoWebm, `${modelSlug}/${timestamp}-${cleanName}.webm`, adminKey, 'video/webm', 'models'),
+          uploadFileToR2(galleryPoster, `${modelSlug}/${timestamp}-${cleanName}-poster.${posterExt}`, adminKey, posterMimeType, 'models'),
         ]);
 
         mediaUrl = mp4Key;
@@ -347,11 +356,13 @@ export default function AdminDashboardContent() {
         const imageExt = galleryImageFile.name.split('.').pop()?.toLowerCase() || 'webp';
         const imageMimeType = galleryImageFile.type || `image/${imageExt === 'jpg' ? 'jpeg' : imageExt}`;
         
+        // Use model-slug path and models bucket for gallery items
         const imageKey = await uploadFileToR2(
           galleryImageFile,
-          `gallery/${timestamp}-${cleanName}.${imageExt}`,
+          `${modelSlug}/${timestamp}-${cleanName}.${imageExt}`,
           adminKey,
-          imageMimeType
+          imageMimeType,
+          'models' // Gallery items go to models bucket
         );
 
         mediaUrl = imageKey;

@@ -133,7 +133,7 @@ export function GalleryManager({
       const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filename = `${modelSlug}/${timestamp}-${sanitizedName}`;
 
-      // Get presigned URL
+      // Get presigned URL - specify 'models' bucket for gallery items
       setUploadProgress(`Getting upload URL for ${file.name}...`);
       const presignRes = await fetch(`/api/upload?key=${adminKey}`, {
         method: 'POST',
@@ -141,6 +141,7 @@ export function GalleryManager({
         body: JSON.stringify({
           filename,
           contentType,
+          bucket: 'models', // Gallery items go to models bucket
         }),
       });
 

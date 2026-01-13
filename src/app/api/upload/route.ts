@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { filename, contentType } = body;
+    const { filename, contentType, bucket } = body;
 
     if (!filename || !contentType) {
       return NextResponse.json(
@@ -36,22 +36,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate unique file path
-    const uniqueFilename = `stories/${Date.now()}-${filename}`;
-
-    // Determine bucket based on folder path
-    // For stories, ALWAYS use R2_STORIES_BUCKET_NAME or hardcoded "stories"
-    // NEVER fall back to R2_BUCKET_NAME for stories
-    let bucketName: string;
-    if (uniqueFilename.startsWith("stories/")) {
-      bucketName = process.env.R2_STORIES_BUCKET_NAME || "stories";
+    // Determine bucket and path based on bucket parameter or filename pattern
+    // bucket can be: 'stories' | 'models' | undefined (defaults to 'stories' for backward compatibility)
+    const targetBucket = bucket || 'stories';
+    
+    // Generate unique file path based on bucket
+    let uniqueFilename: string;
+    if (targetBucket === 'models' || targetBucket === 'trans-image-directory') {
+      // For gallery items: use filename as-is (already includes model-slug/)
+      uniqueFilename = filename;
     } else {
-      bucketName = process.env.R2_BUCKET_NAME || "stories";
+      // For stories: prefix with "stories/"
+      uniqueFilename = `stories/${Date.now()}-${filename}`;
+    }
+
+    // Determine bucket name
+    let bucketName: string;
+    if (targetBucket === 'models' || targetBucket === 'trans-image-directory') {
+      bucketName = process.env.R2_BUCKET_NAME || 'trans-image-directory';
+    } else {
+      bucketName = process.env.R2_STORIES_BUCKET_NAME || 'stories';
     }
 
     // Log for debugging (remove in production if needed)
     console.log("Upload bucket selection:", {
       path: uniqueFilename,
+      targetBucket,
       R2_STORIES_BUCKET_NAME: process.env.R2_STORIES_BUCKET_NAME,
       R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
       selectedBucket: bucketName,
@@ -67,11 +77,11 @@ export async function POST(request: Request) {
     // Generate presigned URL (expires in 60 seconds)
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 60 });
 
-    // Construct public URL using the appropriate domain based on path
-    // Stories should use NEXT_PUBLIC_R2_STORIES_DOMAIN, others use NEXT_PUBLIC_R2_PUBLIC_URL
-    const publicDomain = uniqueFilename.startsWith("stories/")
-      ? process.env.NEXT_PUBLIC_R2_STORIES_DOMAIN || process.env.NEXT_PUBLIC_R2_DOMAIN || "pub-7a8adad1ccfc4f0db171158b6cf5c030.r2.dev"
-      : process.env.NEXT_PUBLIC_R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_DOMAIN || "pub-7a8adad1ccfc4f0db171158b6cf5c030.r2.dev";
+    // Construct public URL using the appropriate domain based on bucket
+    // Stories should use NEXT_PUBLIC_R2_STORIES_DOMAIN, models use NEXT_PUBLIC_R2_DOMAIN
+    const publicDomain = (targetBucket === 'models' || targetBucket === 'trans-image-directory')
+      ? process.env.NEXT_PUBLIC_R2_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "pub-7a8adad1ccfc4f0db171158b6cf5c030.r2.dev"
+      : process.env.NEXT_PUBLIC_R2_STORIES_DOMAIN || process.env.NEXT_PUBLIC_R2_DOMAIN || "pub-7a8adad1ccfc4f0db171158b6cf5c030.r2.dev";
     
     // Ensure domain has https:// prefix if it doesn't already
     const publicUrl = publicDomain.startsWith("http")

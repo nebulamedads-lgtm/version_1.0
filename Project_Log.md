@@ -764,6 +764,47 @@
   - Added gray border around model profile pictures in dev dashboard
   - Enhanced checkbox styling in ModelBasicInfo to match iOS 26 aesthetic
 
+### [Current Date] - R2 File Deletion & Cleanup System
+**Status:** Complete
+
+- **R2 Utility Functions:**
+  - Created `src/lib/r2-utils.ts` with centralized R2 deletion utilities
+  - Functions: `deleteFromR2`, `deleteMultipleFromR2`, `deleteModelFolder`, `extractKeyFromUrl`
+  - Helper functions: `getStoryMediaKeys`, `getGalleryItemMediaKeys` (bucket-aware)
+  - Supports both `R2_ENDPOINT` and `R2_ACCOUNT_ID` environment variable patterns
+  - Automatic WebM variant detection for video files
+
+- **API Route Updates:**
+  - **Gallery Delete API:** Now deletes associated R2 files (images, videos, posters) from correct bucket
+  - **Story Delete API:** Deletes story media files including WebM variants and posters
+  - **Story Group Delete API:** Cascading deletion of all stories and their R2 files
+  - **Model Delete API:** Complete cleanup of all associated content (gallery items, stories, story groups) from both R2 buckets
+  - All deletion APIs include comprehensive error handling and logging
+
+- **Upload Route Enhancement:**
+  - Added `bucket` parameter to support routing to correct bucket
+  - Gallery items now upload to `trans-image-directory` bucket (models bucket)
+  - Stories continue to use `stories` bucket
+  - Automatic bucket detection based on upload type
+
+- **Admin Dashboard Updates:**
+  - Gallery Manager: Updated to use `models` bucket for gallery uploads
+  - Admin Dashboard: Updated `uploadFileToR2` to support bucket parameter
+  - Gallery uploads now use model-slug paths (e.g., `valentina-aguirre/timestamp-file.webp`)
+
+- **Cleanup Utility:**
+  - Created `/api/admin/cleanup` endpoint for finding and deleting orphaned R2 files
+  - GET endpoint: Analyzes orphaned files (files in R2 without Supabase records)
+  - POST endpoint: Deletes orphaned files (requires `?confirm=true` for safety)
+  - Handles pagination for large buckets
+  - Batch deletion with 1000-object limit per batch
+
+- **Bucket Detection Logic:**
+  - Smart bucket detection based on URL domain or path pattern
+  - Handles legacy gallery items that may be in `stories` bucket
+  - New gallery items automatically go to `models` bucket
+  - Deletion works for files in either bucket
+
 ### Version 1.0 Status:
 **✅ OFFICIALLY COMPLETE - READY FOR GLOBAL DEPLOYMENT**
 
@@ -778,3 +819,4 @@ All planned features implemented, tested, and polished. The platform is producti
 - Enhanced analytics tracking with comprehensive field logging
 - Full-featured admin dashboard with drag-and-drop management
 - iOS 26 style UI components with glassmorphism effects
+- **Complete R2 file lifecycle management (upload, delete, cleanup)**
