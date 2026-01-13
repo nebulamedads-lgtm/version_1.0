@@ -46,6 +46,14 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
   // Parse story index from URL (defaults to 0 if not provided or invalid)
   const initialStoryIndexFromUrl = storyIndexParam ? parseInt(storyIndexParam, 10) : 0;
 
+  // Clear story params when switching away from 'near' feed
+  useEffect(() => {
+    if (feed !== "near" && (storyId || storyIndexParam)) {
+      setStoryId(null, { history: "replace" });
+      setStoryIndexParam(null, { history: "replace" });
+    }
+  }, [feed, storyId, storyIndexParam, setStoryId, setStoryIndexParam]);
+
   // Only render on 'near' feed
   if (feed !== "near") {
     return null;
@@ -357,8 +365,8 @@ export function HomeStoriesBar({ models }: HomeStoriesBarProps) {
         </div>
       </div>
 
-      {/* Story Viewer Modal - Render when URL param exists and group is found */}
-      {storyId && selectedGroup && selectedModel && (() => {
+      {/* Story Viewer Modal - Render when URL param exists and group is found and feed is 'near' */}
+      {feed === "near" && storyId && selectedGroup && selectedModel && (() => {
         // Use index from URL if valid, otherwise calculate from first unseen story
         // This allows resume-on-reopen within the same session
         let initialStoryIndex = initialStoryIndexFromUrl;

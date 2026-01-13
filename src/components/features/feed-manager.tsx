@@ -50,22 +50,20 @@ export function FeedManager({ models, userCity, language, buttons }: FeedManager
 
   // Step 2: Filter based on feed type
   const filteredModels = useMemo(() => {
+    // Always wait for hydration to avoid mismatch during feed switches
+    if (!isMounted) {
+      // Return empty array during SSR/initial render to prevent hydration mismatch
+      // This ensures client and server render the same thing initially
+      return [];
+    }
+
     if (feed === 'favorites') {
-      // For favorites feed, wait for hydration to avoid mismatch
-      if (!isMounted) {
-        return [];
-      }
       // Filter by favorites from localStorage (using slug)
       const filtered = enrichedModels.filter((m) => 
         favorites.includes(m.slug || m.id)
       );
       // Shuffle favorites
       return shuffleArray(filtered);
-    }
-
-    if (!isMounted) {
-      // Return deterministic order during SSR/initial render for other feeds
-      return enrichedModels;
     }
 
     if (feed === 'new') {
