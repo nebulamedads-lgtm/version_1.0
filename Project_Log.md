@@ -805,6 +805,30 @@
   - New gallery items automatically go to `models` bucket
   - Deletion works for files in either bucket
 
+### [2026-01-13] - Production Upload Limitation (Known Issue)
+**Status:** Workaround Implemented
+
+- **Issue:** Production uploads via `/api/upload/proxy` encounter "DOMParser is not defined" errors in Edge runtime
+  - AWS SDK attempts to parse XML error responses using DOMParser
+  - DOMParser is not available in Cloudflare Edge runtime environment
+  - Multiple attempts to resolve: Buffer → Uint8Array, presigned URL + fetch, error handling improvements
+  - Root cause: AWS SDK v3 XML deserialization requires DOMParser in Edge runtime
+
+- **Current Workaround:**
+  - **Content uploads must be performed from localhost** (`npm run dev`)
+  - Admin dashboard upload functionality works correctly in local development environment
+  - Production site (`transhere.vip`) uploads are disabled until issue is resolved
+
+- **Deferred to Future Version:**
+  - Implement native R2 REST API upload (bypass AWS SDK entirely)
+  - Or migrate to Node.js runtime for upload endpoints (if Cloudflare supports it)
+  - Or use alternative upload method (direct client-side presigned URL uploads with proper CORS)
+
+- **Impact:**
+  - Content management (stories, gallery items) must be done locally
+  - All other production features work correctly
+  - File deletion and cleanup utilities work in production
+
 ### Version 1.0 Status:
 **✅ OFFICIALLY COMPLETE - READY FOR GLOBAL DEPLOYMENT**
 
