@@ -146,18 +146,36 @@ export function GalleryManager({
         body: formData,
       });
 
+      // Check content type before parsing
+      const contentType = uploadRes.headers.get("content-type") || "";
+      const isJson = contentType.includes("application/json");
+
       if (!uploadRes.ok) {
         // Try to parse JSON error, fallback to status text
-        let errorMessage = `Upload failed: ${uploadRes.statusText}`;
-        try {
-          const error = await uploadRes.json();
-          errorMessage = error.error || error.message || errorMessage;
-        } catch {
-          // If response is not JSON, use status text
+        let errorMessage = `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`;
+        
+        if (isJson) {
+          try {
+            const error = await uploadRes.json();
+            errorMessage = error.error || error.message || errorMessage;
+          } catch (parseError) {
+            console.error("Failed to parse error JSON:", parseError);
+            const text = await uploadRes.text();
+            errorMessage = text.substring(0, 200) || errorMessage;
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
           const text = await uploadRes.text();
-          errorMessage = text || errorMessage;
+          errorMessage = `Server error (${uploadRes.status}): ${text.substring(0, 200)}`;
         }
+        
         throw new Error(errorMessage);
+      }
+
+      // Parse successful response
+      if (!isJson) {
+        const text = await uploadRes.text();
+        throw new Error(`Unexpected response format: ${text.substring(0, 200)}`);
       }
 
       const result = await uploadRes.json();

@@ -139,18 +139,36 @@ export default function AdminDashboardContent() {
       body: formData,
     });
 
+    // Check content type before parsing
+    const contentType = uploadResponse.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
+
     if (!uploadResponse.ok) {
       // Try to parse JSON error, fallback to status text
-      let errorMessage = `Upload failed: ${uploadResponse.statusText}`;
-      try {
-        const err = await uploadResponse.json();
-        errorMessage = err.error || err.message || errorMessage;
-      } catch {
-        // If response is not JSON, use status text
+      let errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`;
+      
+      if (isJson) {
+        try {
+          const err = await uploadResponse.json();
+          errorMessage = err.error || err.message || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error JSON:", parseError);
+          const text = await uploadResponse.text();
+          errorMessage = text.substring(0, 200) || errorMessage; // Limit text length
+        }
+      } else {
+        // Response is not JSON (likely HTML error page)
         const text = await uploadResponse.text();
-        errorMessage = text || errorMessage;
+        errorMessage = `Server error (${uploadResponse.status}): ${text.substring(0, 200)}`;
       }
+      
       throw new Error(errorMessage);
+    }
+
+    // Parse successful response
+    if (!isJson) {
+      const text = await uploadResponse.text();
+      throw new Error(`Unexpected response format: ${text.substring(0, 200)}`);
     }
 
     const result = await uploadResponse.json();

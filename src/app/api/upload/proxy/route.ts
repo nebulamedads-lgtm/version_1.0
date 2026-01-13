@@ -69,13 +69,31 @@ export async function POST(request: Request) {
 
     // Upload directly to R2
     const s3Client = getS3Client();
-    await s3Client.send(new PutObjectCommand({
-      Bucket: bucketName,
-      Key: uniqueFilename,
-      Body: uint8Array,
-      ContentType: contentType,
-      CacheControl: 'public, max-age=31536000, immutable',
-    }));
+    
+    console.log("Attempting R2 upload:", {
+      bucket: bucketName,
+      key: uniqueFilename,
+      contentType,
+      fileSize: uint8Array.length,
+      hasCredentials: !!process.env.R2_ACCESS_KEY_ID,
+    });
+    
+    try {
+      await s3Client.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: uniqueFilename,
+        Body: uint8Array,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      }));
+      console.log("R2 upload successful:", { bucket: bucketName, key: uniqueFilename });
+    } catch (r2Error) {
+      console.error("R2 upload failed:", r2Error);
+      // Re-throw with more context
+      throw new Error(
+        `R2 upload failed: ${r2Error instanceof Error ? r2Error.message : String(r2Error)}`
+      );
+    }
 
     // Construct public URL
     const publicDomain = (targetBucket === 'models' || targetBucket === 'trans-image-directory')
@@ -92,26 +110,39 @@ export async function POST(request: Request) {
       publicUrl,
     });
   } catch (error) {
-    console.error("Proxy upload error:", error);
+    // Extract error message safely (avoid DOMParser issues from AWS SDK)
+    let errorMessage = "Internal Server Error";
+    let errorCode: string | undefined;
     
-    // Provide detailed error information for debugging
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    console.error("Error details:", {
-      message: errorMessage,
-      stack: errorStack,
-      ...(bucketName && { bucketName }),
-      ...(uniqueFilename && { uniqueFilename }),
-    });
+    if (error instanceof Error) {
+      errorMessage = error.message || "Internal Server Error";
+      // Check if it's an AWS SDK error
+      if ('$metadata' in error || 'Code' in error || 'name' in error) {
+        // AWS SDK error - extract safe information
+        const awsError = error as any;
+        errorCode = awsError.Code || awsError.name || undefined;
+        errorMessage = awsError.message || awsError.Message || errorMessage;
+        
+        // Log AWS-specific error details
+        console.error("AWS SDK error:", {
+          code: errorCode,
+          message: errorMessage,
+          bucket: bucketName,
+          key: uniqueFilename,
+        });
+      } else {
+        console.error("General error:", errorMessage);
+      }
+    } else {
+      errorMessage = String(error);
+      console.error("Unknown error type:", error);
+    }
     
     return NextResponse.json(
       { 
         success: false,
         error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+        ...(errorCode && { code: errorCode }),
       },
       { status: 500 }
     );
