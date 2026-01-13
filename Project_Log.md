@@ -703,6 +703,33 @@
 - `src/components/layout/profile-header-client.tsx`: Brand name, button colors, glassmorphism styling
 - `src/app/globals.css`: Added `logo-pulse` keyframe animation
 
+### [Current Date] - Analytics Dashboard Enhancement
+- **Database Schema Update:**
+  - Created migration `014_add_analytics_fields.sql` to add missing fields:
+    - `model_slug`: Direct filtering without joins
+    - `page_path`: URL path tracking
+    - `referrer`: HTTP referrer header
+    - `user_agent`: Device/browser tracking
+  - Added indexes for performance: `model_slug`, `page_path`, `country`, `event_type`
+- **API Route Enhancement (`src/app/api/analytics/route.ts`):**
+  - Updated to accept and store all required fields (`modelSlug`, `pagePath`)
+  - Extracts `referrer` and `user_agent` from request headers
+  - Uses middleware headers (`x-user-country`, `x-user-city`) with Cloudflare/Vercel fallbacks
+  - Made `modelId` optional to support home page views
+- **Analytics Hook Update (`src/hooks/use-analytics.ts`):**
+  - Refactored to accept `AnalyticsParams` object with `modelId`, `modelSlug`, `pagePath`
+  - Uses `usePathname()` for automatic page path detection
+  - Memoized `sendEvent` with `useCallback` for performance
+  - Updated `trackView` and `trackClick` to accept optional params
+- **Component Updates:**
+  - `ModelViewTracker`: Now accepts and passes `modelSlug` prop
+  - `ChatButton`: Now accepts and passes `modelSlug` prop
+  - `ProfileGallery`: Now accepts and passes `modelSlug` prop
+  - Model page (`src/app/model/[slug]/page.tsx`): Passes `modelSlug={slug}` to all components
+- **TypeScript Types:**
+  - Updated `AnalyticsEvent` interface in `src/types/analytics.ts` to include all new fields
+  - All fields are nullable to support backward compatibility
+
 ### Version 1.0 Status:
 **✅ OFFICIALLY COMPLETE - READY FOR GLOBAL DEPLOYMENT**
 
@@ -714,3 +741,4 @@ All planned features implemented, tested, and polished. The platform is producti
 - Real-time synchronization
 - Mobile-first responsive design
 - Zero-cost infrastructure (Cloudflare Pages + R2)
+- Enhanced analytics tracking with comprehensive field logging
