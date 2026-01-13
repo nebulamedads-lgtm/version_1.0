@@ -61,16 +61,17 @@ export async function POST(request: Request) {
       bucketName = process.env.R2_STORIES_BUCKET_NAME || 'stories';
     }
 
-    // Convert File to ArrayBuffer
+    // Convert File to ArrayBuffer (Edge runtime compatible)
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Use Uint8Array instead of Buffer for Edge runtime compatibility
+    const uint8Array = new Uint8Array(arrayBuffer);
 
     // Upload directly to R2
     const s3Client = getS3Client();
     await s3Client.send(new PutObjectCommand({
       Bucket: bucketName,
       Key: uniqueFilename,
-      Body: buffer,
+      Body: uint8Array,
       ContentType: contentType,
       CacheControl: 'public, max-age=31536000, immutable',
     }));
@@ -91,8 +92,26 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Proxy upload error:", error);
+    
+    // Provide detailed error information for debugging
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error("Error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      bucketName,
+      uniqueFilename,
+    });
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal Server Error" },
+      { 
+        success: false,
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      },
       { status: 500 }
     );
   }

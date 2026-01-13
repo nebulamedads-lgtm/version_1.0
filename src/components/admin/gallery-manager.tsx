@@ -147,12 +147,25 @@ export function GalleryManager({
       });
 
       if (!uploadRes.ok) {
-        const error = await uploadRes.json();
-        throw new Error(error.error || 'Failed to upload file');
+        // Try to parse JSON error, fallback to status text
+        let errorMessage = `Upload failed: ${uploadRes.statusText}`;
+        try {
+          const error = await uploadRes.json();
+          errorMessage = error.error || error.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          const text = await uploadRes.text();
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      const { key } = await uploadRes.json();
-      return key;
+      const result = await uploadRes.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+      
+      return result.key;
     } catch (err) {
       console.error('Upload error:', err);
       throw err;

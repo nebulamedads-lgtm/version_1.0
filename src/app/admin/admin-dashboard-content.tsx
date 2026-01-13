@@ -140,12 +140,25 @@ export default function AdminDashboardContent() {
     });
 
     if (!uploadResponse.ok) {
-      const err = await uploadResponse.json();
-      throw new Error(err.error || "Failed to upload file");
+      // Try to parse JSON error, fallback to status text
+      let errorMessage = `Upload failed: ${uploadResponse.statusText}`;
+      try {
+        const err = await uploadResponse.json();
+        errorMessage = err.error || err.message || errorMessage;
+      } catch {
+        // If response is not JSON, use status text
+        const text = await uploadResponse.text();
+        errorMessage = text || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
-    const { key } = await uploadResponse.json();
-    return key;
+    const result = await uploadResponse.json();
+    if (!result.success) {
+      throw new Error(result.error || "Upload failed");
+    }
+    
+    return result.key;
   };
 
   // Reset all file inputs (Stories)
