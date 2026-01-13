@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -40,7 +39,17 @@ export async function POST(request: Request) {
     // Set to null if invalid to avoid breaking database constraint
     const country = (countryHeader && countryHeader.length === 2) ? countryHeader.toUpperCase() : null;
 
-    const supabase = await createClient();
+    // Use direct Supabase client for Edge compatibility (no cookies needed for anon access)
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     const { error: insertError } = await supabase.from('analytics_events').insert({
       model_id: modelId,

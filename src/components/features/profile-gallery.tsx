@@ -280,7 +280,7 @@ export function ProfileGallery({ items, name, socialLink, modelId, redirectUrl }
               fill
               className="object-cover scale-105 transition-all duration-500 group-hover:scale-110 transition-opacity duration-300"
               sizes="(max-width: 1024px) 100vw, 450px"
-              priority={index === 0}
+              priority={false}
               placeholder="empty"
             />
             {/* Frosted Glass Midnight Overlay */}

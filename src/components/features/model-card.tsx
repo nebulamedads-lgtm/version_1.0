@@ -73,7 +73,7 @@ export function ModelCard({ name, image, tags, slug, priority, isOnline, is_veri
                 ? "grayscale-0 contrast-100" 
                 : "grayscale-[0.80] contrast-[1.1] group-hover:grayscale-0 group-hover:contrast-100 group-focus-within:grayscale-0 group-focus-within:contrast-100"
             )}
-            sizes="(max-width: 768px) 45vw, (max-width: 1024px) 30vw, 225px"
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 225px"
             priority={priority}
             placeholder="empty"
           />

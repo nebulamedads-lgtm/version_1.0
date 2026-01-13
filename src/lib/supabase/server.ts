@@ -1,28 +1,19 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
+/**
+ * Edge-compatible Supabase client for Server Components and API routes.
+ * Uses anon key directly (no authentication required for this app).
+ * 
+ * This is Edge-compatible and works on Cloudflare Pages.
+ */
 export async function createClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: any }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The setAll method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   )
