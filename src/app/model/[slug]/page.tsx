@@ -227,9 +227,9 @@ export default async function ModelPage({ params }: PageProps) {
           {/* Desktop Brand Header - iOS Glass bar on top of info pane */}
           <div className="hidden lg:block bg-background/60 backdrop-blur-2xl border-b border-white/10 flex-shrink-0 z-10 shadow-lg shadow-black/10">
             <div className="flex items-center justify-center p-4">
-              <Link href="/" className="flex items-center px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
+              <Link href="/" className="flex items-center px-4 py-2 rounded-full bg-black/60 backdrop-blur-xl border border-white/20 hover:bg-black/70 transition-all duration-300">
                 <span className="text-white font-bold tracking-tighter">
-                  Tran<span className="text-[#00FF85]">Spot</span>
+                  <span className="text-[#7A27FF]">Trans</span><span className="text-[#00FF85]">Here</span>
                 </span>
               </Link>
             </div>
@@ -336,7 +336,11 @@ export default async function ModelPage({ params }: PageProps) {
         </div>
 
         {/* Gallery Block - order-1 on Mobile (TOP), order-2 (Center) on Desktop */}
-        <div className="order-1 lg:order-2 lg:col-span-6 lg:h-screen lg:overflow-y-auto scrollbar-hide lg:pt-4">
+        <div className="order-1 lg:order-2 lg:col-span-6 lg:h-screen lg:overflow-y-auto scrollbar-hide pt-10 lg:pt-4 relative">
+          {/* Dark obsidian gradient fade below header */}
+          <div className="absolute top-8 left-0 right-0 h-16 pointer-events-none z-10" style={{
+            background: 'linear-gradient(to bottom, rgba(5, 10, 20, 1) 0%, rgba(5, 10, 20, 0.9) 20%, rgba(5, 10, 20, 0.6) 40%, rgba(5, 10, 20, 0.3) 60%, rgba(5, 10, 20, 0.15) 80%, rgba(5, 10, 20, 0) 100%)'
+          }} />
           <ProfileGallery 
             items={galleryItems} 
             name={model.name}

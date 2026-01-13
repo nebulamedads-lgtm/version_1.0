@@ -246,20 +246,19 @@ export function ProfileGallery({ items, name, socialLink, modelId, redirectUrl }
             {/* Frosted Glass Midnight Overlay */}
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
               {/* Frosted backdrop layer - reduced blur for teaser visibility */}
-              <div className="absolute inset-0 bg-background/40 backdrop-blur-md" />
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-[10px]" />
               {/* Gradient vignette - softened for better content preview */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
               
               {/* Content */}
               <div className="relative z-10 flex flex-col items-center">
                 {/* Lock icon with Rich Gold Glassmorphism */}
-                <div className="rounded-full bg-black/60 backdrop-blur-lg p-4 mb-4 shadow-[0_0_20px_rgba(212,175,55,0.3)]">
-                  <Lock className="h-7 w-7 text-[#D4AF37] drop-shadow-[0_0_6px_rgba(212,175,55,0.6)]" strokeWidth={1.5} />
+                <div className="rounded-full bg-black/60 backdrop-blur-[13px] p-4 mb-4 border-2 border-[#D4AF37]/40 shadow-[0_0_20px_rgba(212,175,55,0.3)] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+                  <Lock className="h-7 w-7 text-[#D4AF37] drop-shadow-[0_0_6px_rgba(212,175,55,0.6)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-serif font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] mb-2">Want to see more?</h3>
-                <p className="text-white/80 text-sm mb-5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Unlock exclusive content</p>
+                <h3 className="text-2xl font-sans font-semibold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] mb-5">Want to see more?</h3>
                 {/* VIP Button - Rich Gold Glassmorphism */}
-                <div className="px-7 py-3.5 rounded-full bg-black/50 backdrop-blur-xl text-[#D4AF37] font-semibold shadow-[0_0_15px_rgba(212,175,55,0.25)] transition-all duration-300 hover:bg-black/60 hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] hover:scale-[1.02] drop-shadow-[0_0_6px_rgba(212,175,55,0.7)]">
+                <div className="px-7 py-3.5 rounded-full bg-black/50 backdrop-blur-[19px] text-[#D4AF37] font-semibold border-2 border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.25)] shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition-all duration-300 hover:bg-black/60 hover:border-[#D4AF37]/60 hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.9)] hover:scale-[1.02] drop-shadow-[0_0_6px_rgba(212,175,55,0.7)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                   Unlock VIP Content
                 </div>
               </div>
@@ -285,20 +284,19 @@ export function ProfileGallery({ items, name, socialLink, modelId, redirectUrl }
             {/* Frosted Glass Midnight Overlay */}
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center">
               {/* Frosted backdrop layer - reduced blur for teaser visibility */}
-              <div className="absolute inset-0 bg-background/40 backdrop-blur-md" />
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-[10px]" />
               {/* Gradient vignette - softened for better content preview */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
               
               {/* Content */}
               <div className="relative z-10 flex flex-col items-center">
                 {/* Lock icon with Rich Gold Glassmorphism */}
-                <div className="rounded-full bg-black/60 backdrop-blur-lg p-4 mb-4 shadow-[0_0_20px_rgba(212,175,55,0.3)]">
-                  <Lock className="h-7 w-7 text-[#D4AF37] drop-shadow-[0_0_6px_rgba(212,175,55,0.6)]" strokeWidth={1.5} />
+                <div className="rounded-full bg-black/60 backdrop-blur-[13px] p-4 mb-4 border-2 border-[#D4AF37]/40 shadow-[0_0_20px_rgba(212,175,55,0.3)] shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+                  <Lock className="h-7 w-7 text-[#D4AF37] drop-shadow-[0_0_6px_rgba(212,175,55,0.6)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-2xl font-serif font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] mb-2">Want to see more?</h3>
-                <p className="text-white/80 text-sm mb-5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Unlock exclusive content</p>
+                <h3 className="text-2xl font-sans font-semibold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] mb-5">Want to see more?</h3>
                 {/* VIP Button - Rich Gold Glassmorphism */}
-                <div className="px-7 py-3.5 rounded-full bg-black/50 backdrop-blur-xl text-[#D4AF37] font-semibold shadow-[0_0_15px_rgba(212,175,55,0.25)] transition-all duration-300 hover:bg-black/60 hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] hover:scale-[1.02] drop-shadow-[0_0_6px_rgba(212,175,55,0.7)]">
+                <div className="px-7 py-3.5 rounded-full bg-black/50 backdrop-blur-[19px] text-[#D4AF37] font-semibold border-2 border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.25)] shadow-[0_4px_12px_rgba(0,0,0,0.8)] transition-all duration-300 hover:bg-black/60 hover:border-[#D4AF37]/60 hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.9)] hover:scale-[1.02] drop-shadow-[0_0_6px_rgba(212,175,55,0.7)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                   Unlock VIP Content
                 </div>
               </div>

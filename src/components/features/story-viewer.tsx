@@ -631,7 +631,7 @@ export function StoryViewer({
     try {
       await share({
         url: storyUrl,
-        title: modelName ? `Check out ${modelName}'s story on TranSpot` : 'Check out this story on TranSpot',
+        title: modelName ? `Check out ${modelName}'s story on TransHere` : 'Check out this story on TransHere',
       });
     } catch (error) {
       // Handle any errors silently

@@ -38,13 +38,13 @@ export function FixedHeader({ userCity, nav, header }: FixedHeaderProps) {
       {/* Top Row: Brand Name */}
       <div className="flex items-center justify-between lg:justify-center relative px-4 py-3">
         <h1 className="text-xl font-bold tracking-tighter text-foreground lg:absolute lg:left-1/2 lg:-translate-x-1/2">
-          Tran<span className="text-primary">Spot</span>
+          <span className="text-[#7A27FF]">Trans</span><span className="text-[#00FF85]">Here</span>
         </h1>
         {feed === 'near' && (
           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 lg:absolute lg:right-4">
             <Image
               src="/Page-logo.svg"
-              alt="TranSpot Logo"
+              alt="TransHere Logo"
               width={18}
               height={18}
               className="w-[18px] h-[18px] animate-[logo-pulse_2s_ease-in-out_infinite]"

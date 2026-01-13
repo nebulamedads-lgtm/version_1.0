@@ -23,7 +23,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "TranSpot | Curated Connection",
+  title: "TransHere | Curated Connection",
   description: "Discernment is a Virtue. Your Private World.",
 };
 
